@@ -63,8 +63,7 @@
         #timer-container { min-height: 60px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 10px; }
         #timer-display { font-family: 'Orbitron', sans-serif; font-size: 1.2em; color: var(--light-blue-text); text-shadow: 0 0 5px var(--neon-cyan); margin-bottom: 5px; }
         
-        #new-board-container { display: none; flex-grow: 1; justify-content: center; align-items: center; }
-        #new-board-main-btn { padding: 15px 30px; font-size: 1.3em; font-family: 'Orbitron', sans-serif; cursor: pointer; color: white; background: linear-gradient(45deg, var(--neon-green), #22c55e); border: none; border-radius: 5px; }
+        #new-board-btn { display: none; padding: 15px 30px; font-size: 1.2em; font-family: 'Orbitron', sans-serif; cursor: pointer; color: white; background: linear-gradient(45deg, var(--neon-green), #22c55e); border: none; border-radius: 5px; }
 
         #words, #rewards-list {
             list-style: none; padding: 0; margin: 0;
@@ -101,6 +100,9 @@
         .grid-cell.hint-found { background-color: #0c4a6e; color: #7dd3fc; box-shadow: 0 0 15px var(--neon-cyan); cursor: not-allowed; }
         .grid-cell.selected { background-color: var(--neon-amber); color: var(--mid-blue); box-shadow: 0 0 15px var(--neon-amber); transform: scale(1.05); }
         
+        .grid-cell.bonus-dp { background-color: #4a330c; color: var(--neon-amber); box-shadow: 0 0 15px var(--neon-amber); }
+        .grid-cell.bonus-time { background-color: #0c4a2e; color: var(--neon-green); box-shadow: 0 0 15px var(--neon-green); }
+
         #current-word-container { display: flex; align-items: center; justify-content: center; margin-top: 15px; height: 50px; gap: 15px;}
         #current-word-preview {
             font-size: 2em; color: var(--neon-amber); letter-spacing: 2px;
@@ -161,12 +163,10 @@
                     <div class="panel-inner">
                         <div id="timer-container">
                             <div id="timer-display"></div>
+                            <button id="new-board-btn">Frissítem a szódát</button>
                         </div>
                         <h3>KERESENDŐ SZAVAK</h3>
                         <ul id="words"></ul>
-                        <div id="new-board-container">
-                            <button id="new-board-main-btn">Frissítem a szódát</button>
-                        </div>
                         <div class="panel-bottom-section">
                             <div id="solution-container">
                                 <button id="megoldas-btn">Megoldás Felfedése</button>
@@ -211,7 +211,7 @@
         let isSelectingForDesktop = false;
         let score = 0;
         let isGameActive = true;
-        let gameTimer;
+        let gameTimer, nextBoardDate;
         
         const mainContent = document.getElementById('main-content');
         const gridContainer = document.getElementById('grid-container');
@@ -220,8 +220,7 @@
         const wordListTitle = wordListContainer.querySelector('h3');
         const scoreElement = document.getElementById('score');
         const rewardsListElement = document.getElementById('rewards-list');
-        const newBoardMainBtn = document.getElementById('new-board-main-btn');
-        const newBoardContainer = document.getElementById('new-board-container');
+        const newBoardBtn = document.getElementById('new-board-btn');
         const timerDisplay = document.getElementById('timer-display');
         const currentWordPreview = document.getElementById('current-word-preview');
         const megoldasBtn = document.getElementById('megoldas-btn');
@@ -232,7 +231,7 @@
             startNewRound();
         });
         
-        newBoardMainBtn.addEventListener('click', startNewRound);
+        newBoardBtn.addEventListener('click', startNewRound);
         megoldasBtn.addEventListener('click', showSolutions);
         clearSelectionBtn.addEventListener('click', clearSelection);
         
@@ -251,7 +250,7 @@
 
         function selectionMove(cell) {
             if (!isGameActive || !isSelectingForDesktop || !cell) return;
-
+            
             if (selectedCells.length > 1 && cell === selectedCells[selectedCells.length - 2]) {
                 const lastCell = selectedCells.pop();
                 lastCell.classList.remove('selected');
@@ -262,7 +261,7 @@
             if (cell.classList.contains('selected') || cell.classList.contains('hint-found')) return;
             
             const lastCell = selectedCells[selectedCells.length - 1];
-            if (!lastCell) return;
+            if (!lastCell) { selectCell(cell); return; }
             
             const r1 = parseInt(lastCell.dataset.row), c1 = parseInt(lastCell.dataset.col);
             const r2 = parseInt(cell.dataset.row), c2 = parseInt(cell.dataset.col);
@@ -271,16 +270,17 @@
             const dc = c2 - c1;
             const steps = Math.max(Math.abs(dr), Math.abs(dc));
 
-            if (steps > 0) {
+            if (steps > 1) { 
                 for (let i = 1; i <= steps; i++) {
                     const inter_r = r1 + Math.round(i * dr / steps);
                     const inter_c = c1 + Math.round(i * dc / steps);
                     const interCellNode = gridContainer.children[inter_r * GRID_SIZE + inter_c];
-
                     if (interCellNode && !selectedCells.includes(interCellNode) && !interCellNode.classList.contains('hint-found')) {
                        selectCell(interCellNode);
                     }
                 }
+            } else if (Math.abs(dr) <= 1 && Math.abs(dc) <= 1) {
+                 selectCell(cell);
             }
         }
 
@@ -312,8 +312,25 @@
             const selectedWord = currentWordPreview.textContent;
             if (wordsToFind.includes(selectedWord) && !foundWords.has(selectedWord)) {
                 foundWords.add(selectedWord);
+
+                let multiplier = 1;
+                selectedCells.forEach(cell => {
+                    const r = parseInt(cell.dataset.row);
+                    const c = parseInt(cell.dataset.col);
+                    const bonusType = grid[r][c].bonus;
+                    if(bonusType) {
+                        if(bonusType === 'dp') {
+                            multiplier = 2;
+                        } else if (bonusType === 'time') {
+                            nextBoardDate = new Date(nextBoardDate.getTime() + 15000);
+                        }
+                        grid[r][c].bonus = null;
+                        cell.classList.remove('bonus-dp', 'bonus-time');
+                    }
+                });
+
                 document.getElementById('word-' + selectedWord).classList.add('found');
-                updateScore(selectedWord.length * 10);
+                updateScore((selectedWord.length * 10) * multiplier);
                 setTimeout(clearSelection, 100);
             }
             if (!isTap) {
@@ -345,10 +362,7 @@
             isGameActive = true;
             megoldasBtn.style.display = 'none';
             timerDisplay.style.display = 'block';
-            
-            newBoardContainer.style.display = 'none';
-            wordListElement.style.display = 'block';
-            wordListTitle.style.display = 'block';
+            newBoardBtn.style.display = 'none';
             
             const timeSeed = Math.floor(Date.now() / CYCLE_DURATION_MS);
             setupNewGame(timeSeed);
@@ -364,20 +378,49 @@
             gridContainer.innerHTML = ''; wordListElement.innerHTML = '';
             
             const seededRandom = createSeededRandom(seed);
-            let tempGrid = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill(''));
+            
+            grid = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill(null).map(() => ({ char: '', bonus: null })));
+            
             let wordSelection = seededShuffle([...hungarianWords], seededRandom);
             
             let placedWordsCount = 0;
             while (placedWordsCount < WORD_COUNT && wordSelection.length > 0) {
                 let word = wordSelection.pop().toUpperCase();
                 if (word.length > GRID_SIZE || word.length < 3) continue;
-                let placement = findPlacementForWord(word, tempGrid, seededRandom);
-                if (placement) { wordsToFind.push(word); wordPositions.set(word, placement.cells); placement.cells.forEach((cell, i) => { tempGrid[cell.r][cell.c] = word[i]; }); placedWordsCount++; }
+                let placement = findPlacementForWord(word, grid, seededRandom);
+                if (placement) { 
+                    wordsToFind.push(word); 
+                    wordPositions.set(word, placement.cells); 
+                    placement.cells.forEach((cell, i) => { grid[cell.r][cell.c].char = word[i]; }); 
+                    placedWordsCount++; 
+                }
             }
             
-            grid = tempGrid;
             fillGridWithRandomLetters(seededRandom);
+            placeBonusFields(seededRandom);
             renderGrid(); renderWordList(); updateScore(0);
+        }
+        
+        function placeBonusFields(randomFunc) {
+            const allCoords = [];
+            const wordCoords = new Set();
+            wordPositions.forEach(positions => {
+                positions.forEach(pos => wordCoords.add(`${pos.r}-${pos.c}`));
+            });
+
+            for(let r=0; r<GRID_SIZE; r++) {
+                for(let c=0; c<GRID_SIZE; c++) {
+                    if(!wordCoords.has(`${r}-${c}`)) {
+                        allCoords.push({r, c});
+                    }
+                }
+            }
+
+            seededShuffle(allCoords, randomFunc);
+
+            if (allCoords.length > 0) grid[allCoords.pop().r][allCoords.pop().c].bonus = 'time';
+            if (allCoords.length > 0) grid[allCoords.pop().r][allCoords.pop().c].bonus = 'dp';
+            if (allCoords.length > 0) grid[allCoords.pop().r][allCoords.pop().c].bonus = 'dp';
         }
 
         function findPlacementForWord(word, currentGrid, randomFunc) {
@@ -392,7 +435,7 @@
                 }
                 if (path.length === word.length) {
                     let canPlace = true;
-                    for (let i = 0; i < word.length; i++) { if (currentGrid[path[i].r][path[i].c] !== '' && currentGrid[path[i].r][path[i].c] !== word[i]) { canPlace = false; break; } }
+                    for (let i = 0; i < word.length; i++) { if (currentGrid[path[i].r][path[i].c].char !== '' && currentGrid[path[i].r][path[i].c].char !== word[i]) { canPlace = false; break; } }
                     if (canPlace) return { cells: path };
                 }
                 attempts++;
@@ -401,17 +444,28 @@
         }
 
         function getNeighbors(r, c, exclude) { let neighbors = []; for (let dr = -1; dr <= 1; dr++) { for (let dc = -1; dc <= 1; dc++) { if (dr === 0 && dc === 0) continue; let nr = r + dr, nc = c + dc; if (nr >= 0 && nr < GRID_SIZE && nc >= 0 && nc < GRID_SIZE && !exclude.some(p => p.r === nr && p.c === nc)) { neighbors.push({ r: nr, c: nc }); } } } return neighbors; }
-        function fillGridWithRandomLetters(randomFunc) { const alphabet = 'AÁBCDEÉFGHIÍJKLMNOÓÖŐPQRSTUÚÜŰVWXYZ'; for (let i = 0; i < GRID_SIZE; i++) for (let j = 0; j < GRID_SIZE; j++) if (grid[i][j] === '') grid[i][j] = alphabet[Math.floor(randomFunc() * alphabet.length)]; }
+        
+        function fillGridWithRandomLetters(randomFunc) { 
+            const alphabet = 'AÁBCDEÉFGHIÍJKLMNOÓÖŐPQRSTUÚÜŰVWXYZ'; 
+            for (let i = 0; i < GRID_SIZE; i++) 
+                for (let j = 0; j < GRID_SIZE; j++) 
+                    if (grid[i][j].char === '') grid[i][j].char = alphabet[Math.floor(randomFunc() * alphabet.length)]; 
+        }
         
         function renderGrid() {
             gridContainer.innerHTML = '';
             for (let i = 0; i < GRID_SIZE; i++) {
                 for (let j = 0; j < GRID_SIZE; j++) {
+                    const cellData = grid[i][j];
                     const cell = document.createElement('div');
                     cell.className = 'grid-cell';
-                    cell.textContent = grid[i][j];
+                    cell.textContent = cellData.char;
                     cell.dataset.row = i;
                     cell.dataset.col = j;
+                    
+                    if(cellData.bonus === 'dp') cell.classList.add('bonus-dp');
+                    if(cellData.bonus === 'time') cell.classList.add('bonus-time');
+
                     cell.style.backgroundColor = '';
                     cell.style.boxShadow = '';
                     cell.style.transition = '';
@@ -457,9 +511,7 @@
             clearInterval(gameTimer);
 
             timerDisplay.style.display = 'none';
-            wordListElement.style.display = 'none';
-            wordListTitle.style.display = 'none';
-            newBoardContainer.style.display = 'flex';
+            newBoardBtn.style.display = 'block';
             
             if(!megoldasBtn.disabled) {
                 megoldasBtn.style.display = 'block';
@@ -469,6 +521,9 @@
         
         function scheduleNextBoard() {
             if (gameTimer) clearInterval(gameTimer);
+            
+            const currentSeedStart = Math.floor(Date.now() / CYCLE_DURATION_MS) * CYCLE_DURATION_MS;
+            nextBoardDate = new Date(currentSeedStart + CYCLE_DURATION_MS);
 
             const checkTime = () => {
                 if (!isGameActive) {
@@ -476,9 +531,6 @@
                     return;
                 }
                 const now = new Date();
-                const currentSeedStart = Math.floor(now.getTime() / CYCLE_DURATION_MS) * CYCLE_DURATION_MS;
-                const nextBoardDate = new Date(currentSeedStart + CYCLE_DURATION_MS);
-
                 const remainingMilliseconds = nextBoardDate - now;
 
                 if (remainingMilliseconds <= 0) {
@@ -491,6 +543,8 @@
 
                 if (remainingMilliseconds <= 60000 && isGameActive && !megoldasBtn.disabled) {
                     megoldasBtn.style.display = 'block';
+                } else if (!megoldasBtn.disabled) {
+                    megoldasBtn.style.display = 'none';
                 }
             };
 
