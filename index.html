@@ -24,7 +24,7 @@
             display: flex; justify-content: center; align-items: stretch;
             gap: 30px; max-width: 1400px; margin: auto;
         }
-        #left-column, #right-column { width: 280px; display: flex; }
+        #left-column, #right-column { width: 280px; display: flex; flex-shrink: 0; }
         #center-column { display: flex; flex-direction: column; align-items: center; }
         
         #logo-container { position: relative; margin-bottom: 20px; }
@@ -43,7 +43,6 @@
             border-radius: 8px; border: 1px solid rgba(0, 191, 255, 0.3);
             display: flex; flex-direction: column; position: relative; width: 100%;
         }
-        /* VISSZAÁLLÍTOTT PANEL DIZÁJN */
         .panel-inner { position: relative; width: 100%; height: 100%; display: flex; flex-direction: column; }
         .panel::before, .panel::after, .panel-inner::before, .panel-inner::after {
             content: ''; position: absolute; width: 15px; height: 15px;
@@ -59,11 +58,13 @@
         #timer-display { font-family: 'Orbitron', sans-serif; font-size: 1.2em; color: var(--light-blue-text); text-shadow: 0 0 5px var(--neon-cyan); margin-bottom: 5px; }
         #new-board-btn { display: none; padding: 10px 20px; font-size: 1.1em; font-family: 'Orbitron', sans-serif; cursor: pointer; color: white; background: linear-gradient(45deg, var(--neon-cyan), #4169E1); border: none; border-radius: 5px; }
 
-        #words { list-style: none; padding: 0; margin: 0; overflow-y: auto; flex-grow: 1; }
+        /* VÁLTOZTATÁS: max-height és overflow-y eltávolítva */
+        #words { list-style: none; padding: 0; margin: 0; flex-grow: 1; }
         #words li { padding: 8px; margin-bottom: 5px; font-size: 1.3em; border-radius: 5px; transition: all 0.3s ease; border-left: 3px solid transparent; }
         #words li.found { background: linear-gradient(90deg, rgba(74, 222, 128, 0.2), transparent); border-left: 3px solid var(--neon-green); }
 
-        #solution-container { margin-top: auto; padding-top: 15px; }
+        /* VÁLTOZTATÁS: A megoldás gomb konténere most a pontszám előtt van a HTML-ben */
+        #solution-container { margin-top: auto; padding-top: 15px; margin-bottom: 15px;}
         #megoldas-btn {
             display: none; padding: 10px 20px; font-size: 1.1em;
             font-family: 'Orbitron', sans-serif; cursor: pointer; color: white;
@@ -72,12 +73,13 @@
         }
         #megoldas-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-        #score-container { text-align: center; margin-top: 15px; flex-shrink: 0; }
+        #score-container { text-align: center; flex-shrink: 0; }
         #score { font-size: 2.5em; color: var(--neon-amber); font-weight: bold; }
         
         #grid-container {
             display: grid; grid-template-columns: repeat(9, 60px);
             gap: 5px; padding: 10px; border-radius: 10px; border: 1px solid rgba(0, 191, 255, 0.5);
+            touch-action: none;
         }
         .grid-cell {
             width: 60px; height: 60px; display: flex; justify-content: center; align-items: center;
@@ -110,6 +112,24 @@
         .reward-name { font-weight: bold; font-size: 1.1em; color: #93c5fd; }
         .reward-desc { font-size: 0.8em; margin: 5px 0; color: #94a3b8; }
         .reward-cost { font-weight: bold; color: var(--neon-amber); text-align: right; }
+
+        @media (max-width: 900px) {
+            body { padding: 5px; }
+            #game-layout { flex-direction: column; align-items: center; gap: 20px; }
+            #left-column, #right-column, #center-column { width: 100%; max-width: 480px; }
+            #center-column { order: -1; }
+            .logo-text { font-size: 3.5em; }
+
+            #grid-container {
+                width: 95vw; max-width: 480px;
+                height: 95vw; max-height: 480px;
+                grid-template-columns: repeat(9, 1fr);
+                gap: 1.1vw; padding: 1.5vw;
+            }
+            .grid-cell { font-size: 5.5vw; border-radius: 1vw; }
+            #current-word-preview { font-size: 1.5em; margin-top: 10px; }
+            #words li { font-size: 1.1em; }
+        }
     </style>
 </head>
 <body>
@@ -124,8 +144,9 @@
                         </div>
                         <h3>KERESENDŐ SZAVAK</h3>
                         <ul id="words"></ul>
+                        <!-- VÁLTOZTATÁS: Gomb konténer áthelyezve a pontszám elé -->
                         <div id="solution-container">
-                            <button id="megoldas-btn">Megoldás</button>
+                            <button id="megoldas-btn">Megoldás Felfedése</button>
                         </div>
                         <div id="score-container"><h3>PONTOK</h3><div id="score">0</div></div>
                     </div>
@@ -159,7 +180,7 @@
         const GRID_SIZE = 9, WORD_COUNT = 10;
         let wordsToFind = [], wordPositions = new Map(), grid = [], selectedCells = [];
         let foundWords = new Set();
-        let isMouseDown = false, score = 0, isGameOver = false;
+        let isSelecting = false, score = 0, isGameOver = false;
         let gameTimer;
         
         const mainContent = document.getElementById('main-content');
@@ -180,18 +201,15 @@
         newBoardBtn.addEventListener('click', startNewRound);
         megoldasBtn.addEventListener('click', showSolutions);
         
-        function handleMouseDown(e) {
-            if (isGameOver) return;
-            const cell = e.target;
-            if (cell.classList.contains('hint-found')) return;
-            isMouseDown = true;
+        function selectionStart(cell) {
+            if (isGameOver || !cell || cell.classList.contains('hint-found')) return;
+            isSelecting = true;
             clearSelection();
             selectCell(cell);
         }
 
-        function handleMouseOver(e) {
-            if (!isMouseDown || isGameOver) return;
-            const cell = e.target;
+        function selectionMove(cell) {
+            if (!isSelecting || isGameOver || !cell) return;
             
             if (selectedCells.length > 1 && cell === selectedCells[selectedCells.length - 2]) {
                 const lastCell = selectedCells.pop();
@@ -215,14 +233,30 @@
             }
         }
 
-        function handleMouseUp() {
-            if (isGameOver) return;
-            isMouseDown = false;
+        function selectionEnd() {
+            if (!isSelecting) return;
+            isSelecting = false;
             if (selectedCells.length > 0) {
                 checkSelectedWord();
             }
         }
 
+        function handleMouseDown(e) { selectionStart(e.target); }
+        function handleMouseOver(e) { selectionMove(e.target); }
+        
+        function handleTouchStart(e) {
+            e.preventDefault();
+            selectionStart(e.touches[0].target);
+        }
+        function handleTouchMove(e) {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const element = document.elementFromPoint(touch.clientX, touch.clientY);
+            if (element && element.classList.contains('grid-cell')) {
+                selectionMove(element);
+            }
+        }
+        
         function selectCell(cell) {
             if (selectedCells.includes(cell)) return;
             selectedCells.push(cell);
@@ -268,7 +302,7 @@
                                     const cell = gridContainer.children[pos.r * GRID_SIZE + pos.c];
                                     cell.classList.remove('solution-path');
                                 });
-                            }, 1500); // Remove animation after it plays
+                            }, 1500);
                         }
                     }, delay);
                     delay += 500;
@@ -283,7 +317,7 @@
             isGameOver = false;
             megoldasBtn.style.display = 'none';
             megoldasBtn.disabled = false;
-            wordsToFind = []; wordPositions.clear(); grid = []; selectedCells = []; foundWords.clear();
+            wordsToFind = []; wordPositions.clear(); grid = []; selectedCells = []; foundWords.clear(); score = 0; scoreElement.textContent = score;
             gridContainer.innerHTML = ''; wordListElement.innerHTML = '';
             const seededRandom = createSeededRandom(seed);
             let tempGrid = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill(''));
@@ -291,7 +325,7 @@
             let placedWordsCount = 0;
             while (placedWordsCount < WORD_COUNT && wordSelection.length > 0) {
                 let word = wordSelection.pop();
-                if (word.length > (GRID_SIZE * GRID_SIZE) / 2) continue;
+                if (word.length > (GRID_SIZE * GRID_SIZE) / 2 || word.length < 3) continue;
                 let placement = findPlacementForWord(word, tempGrid, seededRandom);
                 if (placement) { wordsToFind.push(word); wordPositions.set(word, placement.cells); placement.cells.forEach((cell, i) => { tempGrid[cell.r][cell.c] = word[i]; }); placedWordsCount++; }
             }
@@ -319,7 +353,25 @@
         }
         function getNeighbors(r, c, exclude) { let neighbors = []; for (let dr = -1; dr <= 1; dr++) { for (let dc = -1; dc <= 1; dc++) { if (dr === 0 && dc === 0) continue; let nr = r + dr, nc = c + dc; if (nr >= 0 && nr < GRID_SIZE && nc >= 0 && nc < GRID_SIZE && !exclude.some(p => p.r === nr && p.c === nc)) { neighbors.push({ r: nr, c: nc }); } } } return neighbors; }
         function fillGridWithRandomLetters(randomFunc) { const alphabet = 'aábcdeéfghiíjklmnoóöőpqrstuúüűvwxyz'; for (let i = 0; i < GRID_SIZE; i++) for (let j = 0; j < GRID_SIZE; j++) if (grid[i][j] === '') grid[i][j] = alphabet[Math.floor(randomFunc() * alphabet.length)]; }
-        function renderGrid() { gridContainer.innerHTML = ''; for (let i = 0; i < GRID_SIZE; i++) for (let j = 0; j < GRID_SIZE; j++) { const cell = document.createElement('div'); cell.className = 'grid-cell'; cell.textContent = grid[i][j]; cell.dataset.row = i; cell.dataset.col = j; cell.addEventListener('mousedown', handleMouseDown); cell.addEventListener('mouseover', handleMouseOver); gridContainer.appendChild(cell); } document.addEventListener('mouseup', handleMouseUp); }
+        function renderGrid() {
+            gridContainer.innerHTML = '';
+            for (let i = 0; i < GRID_SIZE; i++) {
+                for (let j = 0; j < GRID_SIZE; j++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'grid-cell';
+                    cell.textContent = grid[i][j];
+                    cell.dataset.row = i;
+                    cell.dataset.col = j;
+                    cell.addEventListener('mousedown', handleMouseDown, { passive: true });
+                    cell.addEventListener('touchstart', handleTouchStart, { passive: false });
+                    gridContainer.appendChild(cell);
+                }
+            }
+            document.addEventListener('mouseover', handleMouseOver);
+            document.addEventListener('mouseup', selectionEnd);
+            document.addEventListener('touchmove', handleTouchMove, { passive: false });
+            document.addEventListener('touchend', selectionEnd);
+        }
         function renderWordList(shuffled = false) { wordListElement.innerHTML = ''; const words = shuffled ? seededShuffle([...wordsToFind], Math.random) : [...wordsToFind].sort(); words.forEach(word => { const li = document.createElement('li'); li.textContent = word; li.id = 'word-' + word; if (foundWords.has(word)) { li.classList.add('found'); } wordListElement.appendChild(li); }); }
         const rewards = [
             { id: 'vowel_hint', name: 'Magánhangzó Tipp', desc: 'Megjelöli egy szó magánhangzóit.', cost: 1000, action: vowelHint }, 
@@ -330,14 +382,39 @@
             { id: 'free_pass', name: 'Ingyen Passz', desc: 'Megtalálja a legrövidebb hiányzó szót.', cost: 12000, action: findShortestWord }
         ];
         function updateScore(points) { score = Math.max(0, score + points); scoreElement.textContent = score; renderRewards(); }
-        function renderRewards() { rewardsListElement.innerHTML = ''; rewards.forEach(r => { const isAffordable = score >= r.cost; const el = document.createElement('div'); el.className = 'reward-item ' + (isAffordable ? 'affordable' : 'disabled'); if(isAffordable) el.classList.add('affordable'); el.innerHTML = `<div class="reward-name">${r.name}</div><div class="reward-desc">${r.desc}</div><div class="reward-cost">${r.cost} Pont</div>`; if (isAffordable) el.onclick = () => { if (score >= r.cost) { updateScore(-r.cost); r.action(); } }; rewardsListElement.appendChild(el); }); }
-        function getUnfoundWord() { return wordsToFind.find(w => !foundWords.has(w)); }
-        function vowelHint() { const word = getUnfoundWord(); if (!word) return; const vowels = "aáeéiíoóöőuúüű"; document.getElementById('word-' + word).innerHTML = word.split('').map(l => vowels.includes(l) ? `<span style="color: var(--neon-amber);">${l}</span>` : l).join(''); }
+        function renderRewards() { rewardsListElement.innerHTML = ''; rewards.forEach(r => { const isAffordable = score >= r.cost; const el = document.createElement('div'); el.className = 'reward-item ' + (isAffordable ? 'affordable' : 'disabled'); if(isAffordable) el.classList.add('affordable'); el.innerHTML = `<div class="reward-name">${r.name}</div><div class="reward-desc">${r.desc}</div><div class="reward-cost">${r.cost} Pont</div>`; if (isAffordable) el.onclick = () => { if (score >= r.cost && !isGameOver) { updateScore(-r.cost); r.action(); } }; rewardsListElement.appendChild(el); }); }
+        function getUnfoundWord() { const unfound = wordsToFind.filter(w => !foundWords.has(w)); return unfound[0]; }
+        function vowelHint() { const word = getUnfoundWord(); if (!word) return; const vowels = "aáeéiíoóöőuúüű"; document.getElementById('word-' + word).innerHTML = word.split('').map(l => vowels.includes(l.toLowerCase()) ? `<span style="color: var(--neon-amber);">${l}</span>` : l).join(''); }
         function revealLetter() { const word = getUnfoundWord(); if (!word) return; const pos = wordPositions.get(word); const cellInfo = pos[Math.floor(Math.random() * pos.length)]; const cell = gridContainer.children[cellInfo.r * GRID_SIZE + cellInfo.c]; cell.classList.add('hint-pulse'); setTimeout(() => cell.classList.remove('hint-pulse'), 1000); }
         function revealFirstLetter() { const word = getUnfoundWord(); if (!word) return; const cellInfo = wordPositions.get(word)[0]; const cell = gridContainer.children[cellInfo.r * GRID_SIZE + cellInfo.c]; cell.classList.add('hint-found'); }
         function glimpseWord() { const word = getUnfoundWord(); if (!word) return; const positions = wordPositions.get(word); positions.forEach(p => { const cell = gridContainer.children[p.r * GRID_SIZE + p.c]; cell.classList.add('hint-pulse'); setTimeout(() => cell.classList.remove('hint-pulse'), 1000); }); }
-        function findShortestWord() { const sortedUnfound = wordsToFind.filter(w => !foundWords.has(w)).sort((a, b) => a.length - b.length); if (sortedUnfound.length === 0) return; const wordToFind = sortedUnfound[0]; selectedCells = wordPositions.get(wordToFind).map(p => gridContainer.children[p.r * GRID_SIZE + p.c]); checkSelectedWord(); }
-        function scheduleNextBoard() { if (gameTimer) clearInterval(gameTimer); const checkTime = () => { const now = new Date(); const nextBoardDate = new Date(now); nextBoardDate.setMinutes(now.getMinutes() - (now.getMinutes() % 10) + 10, 0, 0); const targetTime = nextBoardDate.toLocaleTimeString('hu-HU', { hour: '2-digit', minute: '2-digit' }); timerDisplay.textContent = `Következő tábla: ${targetTime}`; timerDisplay.style.display = 'block'; newBoardBtn.style.display = 'none'; megoldasBtn.style.display = 'none'; if (new Date() >= nextBoardDate) { clearInterval(gameTimer); isGameOver = true; timerDisplay.style.display = 'none'; newBoardBtn.style.display = 'block'; megoldasBtn.style.display = 'block'; } }; checkTime(); gameTimer = setInterval(checkTime, 1000); }
+        function findShortestWord() { const sortedUnfound = wordsToFind.filter(w => !foundWords.has(w)).sort((a, b) => a.length - b.length); if (sortedUnfound.length === 0) return; const wordToFind = sortedUnfound[0]; foundWords.add(wordToFind); document.getElementById('word-' + wordToFind).classList.add('found'); updateScore(wordToFind.length * 10); renderRewards(); }
+        
+        function scheduleNextBoard() {
+            if (gameTimer) clearInterval(gameTimer);
+            const checkTime = () => {
+                const now = new Date();
+                const nextBoardDate = new Date(now);
+                nextBoardDate.setMinutes(now.getMinutes() - (now.getMinutes() % 10) + 10, 0, 0);
+                
+                if (new Date() >= nextBoardDate) {
+                    clearInterval(gameTimer);
+                    isGameOver = true;
+                    timerDisplay.style.display = 'none';
+                    newBoardBtn.style.display = 'block';
+                    // VÁLTOZTATÁS: Megoldás gomb megjelenítése
+                    megoldasBtn.style.display = 'block';
+                } else {
+                    const targetTime = nextBoardDate.toLocaleTimeString('hu-HU', { hour: '2-digit', minute: '2-digit' });
+                    timerDisplay.textContent = `Következő tábla: ${targetTime}`;
+                    timerDisplay.style.display = 'block';
+                    newBoardBtn.style.display = 'none';
+                    megoldasBtn.style.display = 'none';
+                }
+            };
+            checkTime();
+            gameTimer = setInterval(checkTime, 1000);
+        }
     </script>
 </body>
 </html>
