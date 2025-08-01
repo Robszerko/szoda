@@ -43,6 +43,7 @@
             border-radius: 8px; border: 1px solid rgba(0, 191, 255, 0.3);
             display: flex; flex-direction: column; position: relative; width: 100%;
         }
+        /* VISSZAÁLLÍTOTT PANEL DIZÁJN */
         .panel-inner { position: relative; width: 100%; height: 100%; display: flex; flex-direction: column; }
         .panel::before, .panel::after, .panel-inner::before, .panel-inner::after {
             content: ''; position: absolute; width: 15px; height: 15px;
@@ -94,6 +95,21 @@
             color: var(--neon-amber); letter-spacing: 2px;
             font-family: 'Orbitron', sans-serif; text-transform: uppercase;
         }
+
+        #rewards-list { overflow-y: auto; flex-grow: 1; }
+        .reward-item {
+            background-color: var(--mid-blue); border: 1px solid #334155;
+            padding: 15px; margin-bottom: 12px;
+            border-radius: 5px; cursor: pointer; transition: all 0.2s; text-align: left;
+        }
+        .reward-item.disabled { opacity: 0.4; cursor: not-allowed; }
+        .reward-item.affordable {
+            border-color: var(--neon-cyan);
+            box-shadow: 0 0 15px var(--neon-cyan), 0 0 5px var(--neon-cyan) inset;
+        }
+        .reward-name { font-weight: bold; font-size: 1.1em; color: #93c5fd; }
+        .reward-desc { font-size: 0.8em; margin: 5px 0; color: #94a3b8; }
+        .reward-cost { font-weight: bold; color: var(--neon-amber); text-align: right; }
     </style>
 </head>
 <body>
@@ -247,6 +263,12 @@
                                 const cell = gridContainer.children[pos.r * GRID_SIZE + pos.c];
                                 cell.classList.add('solution-path');
                             });
+                            setTimeout(() => {
+                                positions.forEach(pos => {
+                                    const cell = gridContainer.children[pos.r * GRID_SIZE + pos.c];
+                                    cell.classList.remove('solution-path');
+                                });
+                            }, 1500); // Remove animation after it plays
                         }
                     }, delay);
                     delay += 500;
@@ -269,7 +291,7 @@
             let placedWordsCount = 0;
             while (placedWordsCount < WORD_COUNT && wordSelection.length > 0) {
                 let word = wordSelection.pop();
-                if (word.length > GRID_SIZE * 2) continue;
+                if (word.length > (GRID_SIZE * GRID_SIZE) / 2) continue;
                 let placement = findPlacementForWord(word, tempGrid, seededRandom);
                 if (placement) { wordsToFind.push(word); wordPositions.set(word, placement.cells); placement.cells.forEach((cell, i) => { tempGrid[cell.r][cell.c] = word[i]; }); placedWordsCount++; }
             }
@@ -315,29 +337,7 @@
         function revealFirstLetter() { const word = getUnfoundWord(); if (!word) return; const cellInfo = wordPositions.get(word)[0]; const cell = gridContainer.children[cellInfo.r * GRID_SIZE + cellInfo.c]; cell.classList.add('hint-found'); }
         function glimpseWord() { const word = getUnfoundWord(); if (!word) return; const positions = wordPositions.get(word); positions.forEach(p => { const cell = gridContainer.children[p.r * GRID_SIZE + p.c]; cell.classList.add('hint-pulse'); setTimeout(() => cell.classList.remove('hint-pulse'), 1000); }); }
         function findShortestWord() { const sortedUnfound = wordsToFind.filter(w => !foundWords.has(w)).sort((a, b) => a.length - b.length); if (sortedUnfound.length === 0) return; const wordToFind = sortedUnfound[0]; selectedCells = wordPositions.get(wordToFind).map(p => gridContainer.children[p.r * GRID_SIZE + p.c]); checkSelectedWord(); }
-        function scheduleNextBoard() {
-            if (gameTimer) clearInterval(gameTimer);
-            const checkTime = () => {
-                const now = new Date();
-                const nextBoardDate = new Date(now);
-                nextBoardDate.setMinutes(now.getMinutes() - (now.getMinutes() % 10) + 10, 0, 0);
-                const targetTime = nextBoardDate.toLocaleTimeString('hu-HU', { hour: '2-digit', minute: '2-digit' });
-                timerDisplay.textContent = `Következő tábla: ${targetTime}`;
-                timerDisplay.style.display = 'block';
-                newBoardBtn.style.display = 'none';
-                megoldasBtn.style.display = 'none';
-
-                if (new Date() >= nextBoardDate) {
-                    clearInterval(gameTimer);
-                    isGameOver = true;
-                    timerDisplay.style.display = 'none';
-                    newBoardBtn.style.display = 'block';
-                    megoldasBtn.style.display = 'block';
-                }
-            };
-            checkTime();
-            gameTimer = setInterval(checkTime, 1000);
-        }
+        function scheduleNextBoard() { if (gameTimer) clearInterval(gameTimer); const checkTime = () => { const now = new Date(); const nextBoardDate = new Date(now); nextBoardDate.setMinutes(now.getMinutes() - (now.getMinutes() % 10) + 10, 0, 0); const targetTime = nextBoardDate.toLocaleTimeString('hu-HU', { hour: '2-digit', minute: '2-digit' }); timerDisplay.textContent = `Következő tábla: ${targetTime}`; timerDisplay.style.display = 'block'; newBoardBtn.style.display = 'none'; megoldasBtn.style.display = 'none'; if (new Date() >= nextBoardDate) { clearInterval(gameTimer); isGameOver = true; timerDisplay.style.display = 'none'; newBoardBtn.style.display = 'block'; megoldasBtn.style.display = 'block'; } }; checkTime(); gameTimer = setInterval(checkTime, 1000); }
     </script>
 </body>
 </html>
