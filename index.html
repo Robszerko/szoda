@@ -47,7 +47,7 @@
             padding: 20px; background-color: rgba(15, 23, 42, 0.8);
             border-radius: 8px; border: 1px solid rgba(0, 191, 255, 0.3);
             display: flex; flex-direction: column; position: relative; width: 100%; box-sizing: border-box;
-            flex-grow: 1; /* Hozzáadva, hogy a panelek kitöltsék a rendelkezésre álló magasságot */
+            flex-grow: 1;
         }
         .panel-inner { position: relative; width: 100%; height: 100%; display: flex; flex-direction: column; }
         .panel::before, .panel::after, .panel-inner::before, .panel-inner::after {
@@ -62,13 +62,14 @@
         #word-list-container h3, #rewards-container h3 { font-family: 'Orbitron', sans-serif; margin-top: 0; color: var(--neon-cyan); text-shadow: 0 0 5px var(--neon-cyan); }
         #timer-container { min-height: 60px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 10px; }
         #timer-display { font-family: 'Orbitron', sans-serif; font-size: 1.2em; color: var(--light-blue-text); text-shadow: 0 0 5px var(--neon-cyan); margin-bottom: 5px; }
-        #new-board-btn { display: none; padding: 10px 20px; font-size: 1.1em; font-family: 'Orbitron', sans-serif; cursor: pointer; color: white; background: linear-gradient(45deg, var(--neon-cyan), #4169E1); border: none; border-radius: 5px; }
+        
+        #new-board-container { display: none; flex-grow: 1; justify-content: center; align-items: center; }
+        #new-board-main-btn { padding: 15px 30px; font-size: 1.3em; font-family: 'Orbitron', sans-serif; cursor: pointer; color: white; background: linear-gradient(45deg, var(--neon-green), #22c55e); border: none; border-radius: 5px; }
 
-        /* JAVÍTVA: Scrollable listák asztali és mobil nézetben */
         #words, #rewards-list {
             list-style: none; padding: 0; margin: 0;
-            overflow-y: auto; /* Görgetés, ha a tartalom túl hosszú */
-            flex-grow: 1; /* Kitölti a rendelkezésre álló helyet a panelen belül */
+            overflow-y: auto;
+            flex-grow: 1;
         }
         #words li { padding: 8px; margin-bottom: 5px; font-size: 1.3em; border-radius: 5px; transition: all 0.3s ease; border-left: 3px solid transparent; text-align: left; }
         #words li.found { background: linear-gradient(90deg, rgba(74, 222, 128, 0.2), transparent); border-left: 3px solid var(--neon-green); }
@@ -99,8 +100,6 @@
         }
         .grid-cell.hint-found { background-color: #0c4a6e; color: #7dd3fc; box-shadow: 0 0 15px var(--neon-cyan); cursor: not-allowed; }
         .grid-cell.selected { background-color: var(--neon-amber); color: var(--mid-blue); box-shadow: 0 0 15px var(--neon-amber); transform: scale(1.05); }
-        .grid-cell.solution-path { animation: solution-pulse 1.5s infinite; }
-        @keyframes solution-pulse { 0%, 100% { background-color: var(--neon-purple); box-shadow: 0 0 15px var(--neon-purple); } 50% { background-color: var(--mid-blue); box-shadow: none;} }
         
         #current-word-container { display: flex; align-items: center; justify-content: center; margin-top: 15px; height: 50px; gap: 15px;}
         #current-word-preview {
@@ -128,13 +127,11 @@
         .reward-desc { font-size: 0.8em; margin: 5px 0; color: #94a3b8; }
         .reward-cost { font-weight: bold; color: var(--neon-amber); text-align: right; }
 
-        /* JAVÍTVA: Mobil elrendezés a kérések szerint */
         @media (max-width: 900px) {
             body { padding: 10px 5px; }
             #game-layout { flex-direction: column; align-items: center; gap: 25px; }
             #left-column, #right-column, #center-column { width: 100%; max-width: 480px; }
             
-            /* Elemek sorrendjének felcserélése mobilon */
             #center-column { order: 1; }
             #left-column { order: 2; }
             #right-column { order: 3; }
@@ -151,7 +148,6 @@
             #words li { font-size: 1.1em; padding: 6px 8px;}
             #clear-selection-btn { display: block; }
             
-            /* Magasság korlátozása mobilon, hogy a panelek tartalma görgethető legyen */
             #words { max-height: 25vh; }
             #rewards-list { max-height: 25vh; }
         }
@@ -165,10 +161,12 @@
                     <div class="panel-inner">
                         <div id="timer-container">
                             <div id="timer-display"></div>
-                            <button id="new-board-btn">Friss Szóda!</button>
                         </div>
                         <h3>KERESENDŐ SZAVAK</h3>
                         <ul id="words"></ul>
+                        <div id="new-board-container">
+                            <button id="new-board-main-btn">Frissítem a szódát</button>
+                        </div>
                         <div class="panel-bottom-section">
                             <div id="solution-container">
                                 <button id="megoldas-btn">Megoldás Felfedése</button>
@@ -207,21 +205,23 @@
         ];
         
         const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
-        const GRID_SIZE = 9, WORD_COUNT = 10;
+        const GRID_SIZE = 9, WORD_COUNT = 10, CYCLE_DURATION_MS = 5 * 60 * 1000;
         let wordsToFind = [], wordPositions = new Map(), grid = [], selectedCells = [];
         let foundWords = new Set();
         let isSelectingForDesktop = false;
         let score = 0;
         let isGameActive = true;
-        let isNewBoardAvailable = false;
         let gameTimer;
         
         const mainContent = document.getElementById('main-content');
         const gridContainer = document.getElementById('grid-container');
         const wordListElement = document.getElementById('words');
+        const wordListContainer = document.getElementById('word-list-container');
+        const wordListTitle = wordListContainer.querySelector('h3');
         const scoreElement = document.getElementById('score');
         const rewardsListElement = document.getElementById('rewards-list');
-        const newBoardBtn = document.getElementById('new-board-btn');
+        const newBoardMainBtn = document.getElementById('new-board-main-btn');
+        const newBoardContainer = document.getElementById('new-board-container');
         const timerDisplay = document.getElementById('timer-display');
         const currentWordPreview = document.getElementById('current-word-preview');
         const megoldasBtn = document.getElementById('megoldas-btn');
@@ -232,7 +232,7 @@
             startNewRound();
         });
         
-        newBoardBtn.addEventListener('click', startNewRound);
+        newBoardMainBtn.addEventListener('click', startNewRound);
         megoldasBtn.addEventListener('click', showSolutions);
         clearSelectionBtn.addEventListener('click', clearSelection);
         
@@ -251,19 +251,36 @@
 
         function selectionMove(cell) {
             if (!isGameActive || !isSelectingForDesktop || !cell) return;
+
             if (selectedCells.length > 1 && cell === selectedCells[selectedCells.length - 2]) {
                 const lastCell = selectedCells.pop();
                 lastCell.classList.remove('selected');
                 updateWordPreview();
                 return;
             }
-            if (cell.classList.contains('hint-found') || cell.classList.contains('selected')) return;
+
+            if (cell.classList.contains('selected') || cell.classList.contains('hint-found')) return;
+            
             const lastCell = selectedCells[selectedCells.length - 1];
             if (!lastCell) return;
-            const lastRow = parseInt(lastCell.dataset.row), lastCol = parseInt(lastCell.dataset.col);
-            const currentRow = parseInt(cell.dataset.row), currentCol = parseInt(cell.dataset.col);
-            if (Math.abs(currentRow - lastRow) <= 1 && Math.abs(currentCol - lastCol) <= 1) {
-                selectCell(cell);
+            
+            const r1 = parseInt(lastCell.dataset.row), c1 = parseInt(lastCell.dataset.col);
+            const r2 = parseInt(cell.dataset.row), c2 = parseInt(cell.dataset.col);
+            
+            const dr = r2 - r1;
+            const dc = c2 - c1;
+            const steps = Math.max(Math.abs(dr), Math.abs(dc));
+
+            if (steps > 0) {
+                for (let i = 1; i <= steps; i++) {
+                    const inter_r = r1 + Math.round(i * dr / steps);
+                    const inter_c = c1 + Math.round(i * dc / steps);
+                    const interCellNode = gridContainer.children[inter_r * GRID_SIZE + inter_c];
+
+                    if (interCellNode && !selectedCells.includes(interCellNode) && !interCellNode.classList.contains('hint-found')) {
+                       selectCell(interCellNode);
+                    }
+                }
             }
         }
 
@@ -307,30 +324,33 @@
         function showSolutions() {
             isGameActive = false;
             megoldasBtn.disabled = true;
-            newBoardBtn.textContent = "Új Játék";
+            megoldasBtn.style.display = 'none';
             renderRewards(); 
-            let delay = 0;
             wordsToFind.forEach(word => {
                 if (!foundWords.has(word)) {
-                    setTimeout(() => {
-                        const positions = wordPositions.get(word);
-                        if (positions) {
-                            positions.forEach(pos => gridContainer.children[pos.r * GRID_SIZE + pos.c].classList.add('solution-path'));
-                            setTimeout(() => {
-                                positions.forEach(pos => gridContainer.children[pos.r * GRID_SIZE + pos.c].classList.remove('solution-path'));
-                            }, 1500);
-                        }
-                    }, delay);
-                    delay += 500;
+                    const positions = wordPositions.get(word);
+                    if (positions) {
+                        positions.forEach(pos => {
+                            const cell = gridContainer.children[pos.r * GRID_SIZE + pos.c];
+                            cell.style.transition = 'background-color 0.5s, box-shadow 0.5s';
+                            cell.style.backgroundColor = 'var(--neon-purple)';
+                            cell.style.boxShadow = '0 0 15px var(--neon-purple)';
+                        });
+                    }
                 }
             });
         }
         
         function startNewRound() {
             isGameActive = true;
-            isNewBoardAvailable = false;
-            megoldasBtn.style.display = 'none'; // Gomb elrejtése új kör elején
-            const timeSeed = Math.floor(Date.now() / (10 * 60 * 1000));
+            megoldasBtn.style.display = 'none';
+            timerDisplay.style.display = 'block';
+            
+            newBoardContainer.style.display = 'none';
+            wordListElement.style.display = 'block';
+            wordListTitle.style.display = 'block';
+            
+            const timeSeed = Math.floor(Date.now() / CYCLE_DURATION_MS);
             setupNewGame(timeSeed);
             scheduleNextBoard();
         }
@@ -340,7 +360,6 @@
         
         function setupNewGame(seed) {
             megoldasBtn.disabled = false;
-            newBoardBtn.textContent = "Friss Szóda!";
             wordsToFind = []; wordPositions.clear(); grid = []; selectedCells = []; foundWords.clear(); score = 0;
             gridContainer.innerHTML = ''; wordListElement.innerHTML = '';
             
@@ -393,8 +412,21 @@
                     cell.textContent = grid[i][j];
                     cell.dataset.row = i;
                     cell.dataset.col = j;
+                    cell.style.backgroundColor = '';
+                    cell.style.boxShadow = '';
+                    cell.style.transition = '';
+
                     if (isMobile) {
-                        cell.addEventListener('click', () => handleCellTap(cell));
+                        cell.addEventListener('touchstart', (e) => { e.preventDefault(); selectionStart(cell); }, { passive: false });
+                        cell.addEventListener('touchmove', (e) => { 
+                            e.preventDefault();
+                            const touch = e.touches[0];
+                            const targetCell = document.elementFromPoint(touch.clientX, touch.clientY);
+                            if(targetCell && targetCell.classList.contains('grid-cell')) {
+                                selectionMove(targetCell);
+                            }
+                        }, { passive: false });
+                        cell.addEventListener('touchend', (e) => { e.preventDefault(); selectionEnd(); });
                     } else {
                         cell.addEventListener('mousedown', () => selectionStart(cell));
                         cell.addEventListener('mouseover', () => selectionMove(cell));
@@ -419,51 +451,46 @@
         function glimpseWord() { const word = getUnfoundWord(); if (!word) return; const positions = wordPositions.get(word); positions.forEach(p => { const cell = gridContainer.children[p.r * GRID_SIZE + p.c]; cell.classList.add('solution-path'); setTimeout(() => cell.classList.remove('solution-path'), 1000); }); }
         function findShortestWord() { const wordToFind = getUnfoundWord(true); if (!wordToFind) return; foundWords.add(wordToFind); document.getElementById('word-' + wordToFind).classList.add('found'); updateScore(wordToFind.length * 10); }
 
-        // JAVÍTVA: Teljesen új, megbízhatóbb időzítő logika
+        function endRound() {
+            if (!isGameActive) return;
+            isGameActive = false;
+            clearInterval(gameTimer);
+
+            timerDisplay.style.display = 'none';
+            wordListElement.style.display = 'none';
+            wordListTitle.style.display = 'none';
+            newBoardContainer.style.display = 'flex';
+            
+            if(!megoldasBtn.disabled) {
+                megoldasBtn.style.display = 'block';
+            }
+            renderRewards();
+        }
+        
         function scheduleNextBoard() {
             if (gameTimer) clearInterval(gameTimer);
 
             const checkTime = () => {
-                const now = new Date();
-                const minutes = now.getMinutes();
-
-                const nextTenMinuteMark = Math.ceil((minutes + 0.001) / 10) * 10;
-                const nextBoardDate = new Date(now);
-                if (nextTenMinuteMark > 59) {
-                    nextBoardDate.setHours(now.getHours() + 1, 0, 0, 0);
-                } else {
-                    nextBoardDate.setMinutes(nextTenMinuteMark, 0, 0);
-                }
-
-                const remainingMilliseconds = nextBoardDate - now;
-
-                // Ha lejár az idő
-                if (remainingMilliseconds <= 0 && !isNewBoardAvailable) {
-                    isNewBoardAvailable = true;
-                    isGameActive = false; 
-                    timerDisplay.textContent = "Új tábla elérhető!";
-                    timerDisplay.style.color = "var(--neon-green)";
-                    newBoardBtn.style.display = 'block';
-                    megoldasBtn.style.display = 'block';
-                    renderRewards(); 
+                if (!isGameActive) {
                     clearInterval(gameTimer);
                     return;
                 }
+                const now = new Date();
+                const currentSeedStart = Math.floor(now.getTime() / CYCLE_DURATION_MS) * CYCLE_DURATION_MS;
+                const nextBoardDate = new Date(currentSeedStart + CYCLE_DURATION_MS);
 
-                // Ha a játék folyamatban van
-                if (!isNewBoardAvailable) {
-                    const remainingMinutes = Math.floor(remainingMilliseconds / 60000);
-                    const remainingSeconds = Math.floor((remainingMilliseconds % 60000) / 1000);
-                    timerDisplay.textContent = `Következő tábla: ${String(remainingMinutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`;
-                    timerDisplay.style.color = "var(--light-blue-text)";
-                    newBoardBtn.style.display = 'none';
+                const remainingMilliseconds = nextBoardDate - now;
 
-                    // MEGOLDÁS GOMB LOGIKA: Megjelenik, ha 1 perc vagy kevesebb van hátra
-                    if (remainingMilliseconds <= 60000 && isGameActive) {
-                        megoldasBtn.style.display = 'block';
-                    } else {
-                        megoldasBtn.style.display = 'none';
-                    }
+                if (remainingMilliseconds <= 0) {
+                    endRound();
+                    return;
+                }
+
+                const targetTime = nextBoardDate.toLocaleTimeString('hu-HU', { hour: '2-digit', minute: '2-digit' });
+                timerDisplay.textContent = `Új tábla ${targetTime}-kor!`;
+
+                if (remainingMilliseconds <= 60000 && isGameActive && !megoldasBtn.disabled) {
+                    megoldasBtn.style.display = 'block';
                 }
             };
 
