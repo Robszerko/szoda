@@ -32,9 +32,15 @@
         #left-column, #right-column { width: 280px; display: flex; flex-direction: column; flex-shrink: 0; }
         #center-column { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; }
         
-        #logo-container { position: relative; margin-bottom: 20px; }
+        #logo-container { position: relative; margin-bottom: 20px; display: flex; align-items: center; justify-content: center; gap: 15px; }
         .logo-text { font-family: 'Orbitron', sans-serif; font-size: 5em; font-weight: bold; color: #ffffff; text-shadow: 0 0 10px var(--neon-cyan), 0 0 20px var(--neon-cyan); }
         
+        #champion-trophy {
+            display: none;
+            font-size: 3em;
+            filter: drop-shadow(0 0 10px var(--neon-amber));
+        }
+
         .static-bubble {
             position: absolute; border-radius: 50%; background: rgba(0, 191, 255, 0.2);
             box-shadow: inset 0 0 10px rgba(255,255,255,0.5); z-index: -1;
@@ -71,6 +77,7 @@
         .panel-inner::after { bottom: 8px; right: 8px; border-width: 0 2px 2px 0; }
 
         #word-list-container h3, #rewards-container h3 { font-family: 'Orbitron', sans-serif; margin-top: 0; color: var(--neon-cyan); text-shadow: 0 0 5px var(--neon-cyan); }
+        #level-display { font-family: 'Orbitron', sans-serif; margin-top: -10px; margin-bottom: 10px; color: var(--neon-amber); min-height: 1.2em; }
         #timer-container { min-height: 60px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 10px; }
         #timer-display { font-family: 'Orbitron', sans-serif; font-size: 1.2em; color: var(--light-blue-text); text-shadow: 0 0 5px var(--neon-cyan); margin-bottom: 5px; }
         #timer-display.warmup-round { color: var(--neon-amber); }
@@ -82,13 +89,13 @@
         #btn-cash-in { background: linear-gradient(45deg, var(--neon-green), #22c55e); }
         #btn-risk-it { background: linear-gradient(45deg, var(--neon-amber), #e18c41); }
 
-        #words {
+        #words, #sprint-words-list {
             list-style: none; padding: 0; margin: 0;
             flex-grow: 1;
             column-count: 2;
             column-gap: 20px;
         }
-        #words li { 
+        #words li, #sprint-words-list li { 
             padding: 5px; 
             margin-bottom: 5px; 
             font-size: 1.1em; 
@@ -99,6 +106,7 @@
             page-break-inside: avoid;
             break-inside: avoid;
         }
+        #words li.hidden-word { display: none; }
         #words li.found { 
             background: rgba(74, 222, 128, 0.2); 
             color: #a7f3d0;
@@ -106,6 +114,12 @@
             text-decoration-thickness: 2px;
             font-style: italic;
         }
+        #words li .revealed-letter {
+            color: var(--neon-amber);
+            font-weight: bold;
+        }
+        #sprint-words-list li { text-decoration: none; font-style: normal; background: rgba(0, 191, 255, 0.1); }
+        
         #rewards-list, #piac-list { list-style: none; padding: 0; margin: 0; overflow-y: auto; flex-grow: 1; }
         #piac-list { display: none; }
         
@@ -130,6 +144,10 @@
             padding: 2px 6px; border-radius: 4px; font-size: 0.8em;
         }
         
+        #sprint-container { display: none; flex-direction: column; flex-grow: 1; }
+        #sprint-score-container { text-align: center; margin-top: auto; padding-top: 15px; }
+        #sprint-score { font-size: 1.5em; color: var(--neon-cyan); font-weight: bold; }
+        
         #grid-container {
             display: grid; grid-template-columns: repeat(9, 60px);
             gap: 5px; padding: 10px; border-radius: 10px; border: 1px solid rgba(0, 191, 255, 0.5);
@@ -148,6 +166,14 @@
         .grid-cell.bonus-dp { background-color: #4a330c; color: var(--neon-amber); box-shadow: 0 0 15px var(--neon-amber); }
         .grid-cell.bonus-time { background-color: #0c4a2e; color: var(--neon-green); box-shadow: 0 0 15px var(--neon-green); }
 
+        .grid-cell.soda-sense-glow {
+            animation: soda-glow 1.5s infinite alternate;
+        }
+        @keyframes soda-glow {
+            from { box-shadow: 0 0 5px rgba(0, 191, 255, 0.2); }
+            to { box-shadow: 0 0 15px rgba(0, 191, 255, 0.7), 0 0 5px rgba(0, 191, 255, 0.7) inset; }
+        }
+
         .hidden-bubble-icon {
             position: absolute;
             bottom: 3px;
@@ -160,16 +186,21 @@
             transition: opacity 0.3s;
         }
 
-        #current-word-container { display: flex; align-items: center; justify-content: center; margin-top: 15px; height: 50px; gap: 15px;}
+        #current-word-container { display: flex; align-items: center; justify-content: center; margin-top: 15px; height: 50px; gap: 10px;}
         #current-word-preview {
             font-size: 2em; color: var(--neon-amber); letter-spacing: 2px;
             font-family: 'Orbitron', sans-serif; text-transform: uppercase;
             flex-grow: 1; text-align: center;
         }
-        #clear-selection-btn {
+        #clear-selection-btn, #undo-selection-btn {
             display: none; padding: 8px 15px; font-size: 0.9em;
-            font-family: 'Orbitron', sans-serif; cursor: pointer; color: var(--dark-blue);
-            background: var(--neon-amber); border: none; border-radius: 5px;
+            font-family: 'Orbitron', sans-serif; cursor: pointer; border: none; border-radius: 5px;
+        }
+        #clear-selection-btn {
+             color: var(--dark-blue); background: var(--neon-amber);
+        }
+        #undo-selection-btn {
+             color: var(--dark-blue); background: var(--neon-cyan);
         }
 
         .reward-item {
@@ -226,8 +257,8 @@
             #current-word-container { height: 40px; }
             #current-word-preview { font-size: 1.5em; }
             #words li { font-size: 1.1em; padding: 6px 8px;}
-            #clear-selection-btn { display: block; }
-            #words { column-count: 1; max-height: 25vh; overflow-y: auto; }
+            #clear-selection-btn, #undo-selection-btn { display: block; }
+            #words, #sprint-words-list { column-count: 1; max-height: 25vh; overflow-y: auto; }
             #rewards-list, #piac-list { max-height: 25vh; }
         }
     </style>
@@ -246,9 +277,18 @@
                                 <button id="btn-risk-it" class="choice-btn">Kockáztatok!</button>
                             </div>
                         </div>
-                        <h3>KERESENDŐ SZAVAK</h3>
+                        <div id="level-display"></div>
+                        <div id="sprint-container">
+                             <h3>SPRINT SZAVAK</h3>
+                             <ul id="sprint-words-list"></ul>
+                        </div>
+                        <h3 id="words-title">KERESENDŐ SZAVAK</h3>
                         <ul id="words"></ul>
                         <div class="panel-bottom-section">
+                            <div id="sprint-score-container">
+                                <h3>SPRINT PONTOK</h3>
+                                <div id="sprint-score">0</div>
+                            </div>
                             <div id="solution-container">
                                 <button id="megoldas-btn">Megoldás Felfedése</button>
                             </div>
@@ -274,13 +314,15 @@
             </div>
             <div id="center-column">
                 <div id="logo-container">
+                    <span id="champion-trophy">🏆</span>
+                    <div class="logo-text">Szóda</div>
                     <div class="static-bubble sb1"></div><div class="static-bubble sb2"></div>
                     <div class="static-bubble sb3"></div><div class="static-bubble sb4"></div>
-                    <div class="logo-text">Szóda</div>
                 </div>
                 <div id="copyright">Copyright © by: Robi</div>
                 <div id="grid-container"></div>
                 <div id="current-word-container">
+                    <button id="undo-selection-btn">Vissza</button>
                     <div id="current-word-preview"></div>
                     <button id="clear-selection-btn">Törlés</button>
                 </div>
@@ -307,633 +349,940 @@
         <div class="panel-inner">
             <h2>Játékszabályzat</h2>
             <ul>
-                <li><strong>A Cél:</strong> Találd meg az összes elrejtett szót a 9x9-es betűrácson, mielőtt lejár az idő!</li>
-                <li><strong>10 Perces Körök:</strong> A játék 10 perces körökben zajlik. Ha egy kör közepén csatlakozol, egy tét nélküli <strong>Bemelegítő Kört</strong> játszhatsz a következő teljes kör kezdetéig.</li>
-                <li><strong>Szókeresés:</strong> Kösd össze a szomszédos betűket a szavak kirakásához. A keresendő szavak vízszintesen és függőlegesen kanyarognak.</li>
-                <li><strong>Kockáztass vagy Gyűjts:</strong> A kör végén dönthetsz: a pontjaidat biztonságban Szóda-Pénzre váltod, vagy kockáztatsz egy 2x szorzóért a következő körben. De vigyázz, ha a bónusz körben nem találsz meg minden szót, a tétként vitt pontjaidat elveszíted!</li>
-                <li><strong>Bónusz Mezők:</strong> A sárga (DP) mező megduplázza a szóért kapott pontot, a zöld (+15s) pedig 15 másodpercet ad a hátralévő idődhöz.</li>
-                <li><strong>Szóda-Vadàszat:</strong> Gyűjtsd össze a táblán elrejtett SZ-Ó-D-A betűket rejtő buborékokat! Ha mind megvan, beválthatod őket egy 24 órás szuperbónuszra!</li>
-                <li><strong>Nyereménybolt & Szóda-Piac:</strong> A pontjaidból körön belüli segítséget vehetsz (Nyereménybolt), a Szóda-Pénzedből pedig maradandó fejlesztéseket és extra erős bónuszokat (Szóda-Piac).</li>
+                <li><strong>A Cél:</strong> Küzdd fel magad a Bajnoki Létrán és nyerd el a Szóda Bajnoka címet!</li>
+                <li><strong>Bemelegítő Kör:</strong> Ha egy 6 perces ciklus közepén érkezel, egy tét nélküli körben (16 szó) gyakorolhatsz a következő teljes kör kezdetéig. Itt a pontok és bónuszok nem számítanak.</li>
+                <li><strong>Éles Körök & Bajnoki Létra:</strong> A teljes 6 perces körök "élesben" mennek. A létra 5 szintből áll, egyre több szóval: 1. szint (18 szó), 2. szint (20), 3. szint (22), 4. szint (24), végül az 5. szint, a Bajnoki Kör (30 szó).</li>
+                <li><strong>Kockáztass vagy Gyűjts:</strong> Ha teljesítesz egy szintet, dönthetsz: a pontjaidat biztonságban Szóda-Pénzre váltod (de a létrát elölről kezded), vagy kockáztatsz egy <strong>2x pontszorzóért</strong> a következő, nehezebb szinten. De vigyázz, ha a bónusz körben nem találsz meg minden szót, a tétként vitt pontjaid elvesznek és a létra elejére kerülsz!</li>
+                <li><strong>Bajnoki Kör (5. szint):</strong> A végső kihívás! Itt a 30 szó egyesével jelenik meg a listán. Ha 6 perc alatt teljesíted, egy hétig tiéd a Bajnoki Serleg!</li>
+                <li><strong>Szóda Sprint:</strong> Ha egy éles körben az idő lejárta előtt megtalálod az összes szót, elindul a Sprint! A hátralévő időben keress bármilyen magyar szót a táblán extra Szóda-Pénzért!</li>
+                <li><strong>Bónuszok & Piac:</strong> Használd a pontjaidat és a Szóda-Pénzedet, hogy segítségeket és maradandó fejlesztéseket vásárolj!</li>
             </ul>
         </div>
     </div>
     
     <script>
-        const hungarianWords = [ 'ablak','abszurd','acél','adat','adoma','adottság','áfonya','ág','ágy','agy','ajak','ajándék','ajtó','akarat','akció','akna','alagút','alak','alakulat','alkalom','alkalmazás','alkotás','alkotmány','alku','áll','állam','állat','állomás','álom','ámen','amőba','ampulla','amulett','anekdota','angyal','antenna','anya','anyag','apa','ápoló','apró','áram','arany','aranyos','arc','árok','árpa','áruló','ás','ásatás','átok','autó','avar','azonos','bábu','bajnok','bakter','bal','baleset','balett','balta','bálvány','bánat','banda','bank','bár','barack','bárány','barát','barlang','barna','báró','bástya','bátor','bátrán','bazár','bébi','becsület','béka','béke','bélyeg','bér','berek','beteg','beton','betű','bicikli','bika','bilincs','birtok','bit','bizalom','biztos','blúz','bocs','bocsánat','bodza','bója','bokor','bolt','bolygó','bomba','bor','borbély','borda','bőr','bors','bot','bozót','bögre','bölcs','bölcső','börtön','bőven','búcsú','bura','burgonya','bútor','búvár','bűvész','bűz','cápa','cár','celeb','cél','cella','ceruza','cica','cigány','cikk','cikornya','cím','címer','cipő','cirkusz','citrom','civil','comb','cudar','cukor','cumi','cáfolat','csáb','család','csap','csapat','csapda','csata','csavar','csel','csempe','csend','csengő','cser','csere','cserép','csésze','csiga','csík','csillag','csípő','csirke','csizma','csoda','csók','csomag','csomó','csónak','csont','csoport','cső','csőr','csúcs','csütörtök','dada','dal','dallam','dáma','dara','darázs','dárda','dátum','december','defekt','dekoltázs','dél','delfin','delta','démon','derék','dervis','design','deszka','detektív','deviza','diadém','diák','dicsőség','diktátor','dilemma','dinamit','dinnye','dió','diploma','dísz','disznó','divat','dob','doboz','dohány','doktor','dolog','domb','döntés','dosszié','dózse','dőzs','dráma','drága','droid','duda','duma','düh','dzsem','dzseki','dzsip','dzsungel','eb','ebéd','ecet','éden','edény','edző','ég','egér','egész','egészség','egyetem','egyház','együtt','éj','éjfél','ékszer','elme','élmény','előny','ember','emelet','emlék','emlős','ének','energia','epizód','epres','ér','érc','érdem','erdő','eredet','eredmény','erény','eresz','erő','erőd','erős','érték','érv','esély','eskü','eső','este','ész','észak','eszme','eszperente','eszpresszó','étel','élet','érem','év','ezer','ezredes','fagyi','fagy','faj','fájdalom','fal','falat','falu','far','farag','farok','farkas','farm','farmer','farsang','fátyol','fecske','fegyver','fehér','fej','fejfa','fék','fekete','feladat','felelet','felhő','fél','félelem','fém','fenék','fenyő','férfi','féreg','festék','fésű','fészek','fiaskó','fiatal','fiú','film','filozófia','finom','fiók','fizika','foci','fog','fogoly','fogyás','fóka','fok','fólia','folt','folyamat','folyó','folyosó','fonál','font','forgalom','forint','forma','forrás','forradalom','fotel','fotó','fő','főnök','föld','főút','főváros','főzelék','főzés','friss','front','fullánk','furcsa','fúró','füge','függöny','fű','fürdő','fűrész','fürj','füst','füzet','fűzfa','galamb','gallér','garázs','gazda','gáz','gém','gén','gepárd','gép','gésa','gesztus','gida','giliszta','gimnázium','gipsz','gitár','gladiátor','glória','góbé','gól','golyó','gomb','gomba','gond','gondola','gong','gömb','göndör','göngy','görcs','görény','görög','gőz','gránát','gránit','gróf','gúla','gumi','gúny','gyalog','gyám','gyár','gyász','gyémánt','gyep','gyerek','gyertek','gyertya','gyík','gyilkos','gyógyír','gyökér','gyöngy','gyors','győzelem','gyufa','gyűrű','gyümölcs','ha','hab','had','hagyma','haj','hajnal','hajó','hal','halál','háló','halszálka','hamis','hamu','hang','hangár','hangszer','hangya','harag','harang','harc','harisnya','hárfa','hasonló','has','hat','hatalom','határ','hát','hattyú','havas','ház','hegedű','hegy','héj','hely','helyes','henger','herceg','hering','hét','hétfő','hétvége','hiány','hiba','híd','hideg','himnusz','hinta','hír','hitel','hit','hivatás','hó','hód','hold','holló','homár','homok','honlap','hónap','hordó','horgony','horgász','horoszkóp','hossz','hosszú','hotel','hóvirág','hulla','humor','hurka','hús','húsvét','huzat','hű','hűség','idomár','idő','iker','ikon','illat','illúzió','impala','impulzus','index','indigó','indíték','infó','inger','ing','iroda','irónia','iskola','isten','iszap','ital','ítélet','íz','izom','izzó','jacht','jaguár','jak','január','járda','jáspis','játék','javas','jávorszarvas','jég','jel','jelenség','jellem','jelmez','jelölt','jelvény','jenki','jet','jód','jóga','joghurt','jog','joker','jós','jóság','jövő','július','június','juta','jutalom','kabal','kabát','kabin','kacaj','kacsa','kád','kakas','kakaó','kaktusz','kalap','kalauz','kalóz','kályha','kamion','kámpa','kanál','kancellár','kandúr','kánikula','kanna','káosz','kapa','kaparó','kapcsoló','kapitány','kápolna','káposzta','kapu','kar','karabiner','karakter','karám','karát','karaván','kard','karnevál', 'kártya','kastély','katalógus','katona','kaució','kávé','kazán','kecske','kedd','kedves','kefe','kék','kém','kép','kérdés','kerék','kereszt','keret','kert','kés','keserű','kész','kettő','kever','kéz','kincs','király','kis','kocka','kocsi','kód','köd','kő','kölcsön','költő','kölyök','kömény','könny','könyv','könnyű','kör','kormány','korona','korsó','korzó','kórház','kosár','kosz','kota','kovács','kotor','köz','közeg','közép','közös','kréta','krimi','kripta','kristály','kritika','krokodil','krumpli','kút','kutya','kuvasz','küld','külső','kürt','kvíz','láb','labor','lábszár','láda','lakás','lakat','lakodalmas','láng','lanka','lant','lap','lapát','lassan','lát','látvány','láva','láz','lecke','legenda','légió','légszomj','légy','lehel','lélek','lemez','lencse','lepke','lét','létra','levél','leves','lexikon','liba','lift','liga','likőr','lila','limbó','limit','limonádé','link','líra','lista','ló','lobog','logika','logó','lokál','lomb','lop','lottó','lovag','lóerő','lő','lök','löncs','lucfenyő','lúd','luk','lyuk','macska','madár','mag','mágia','mágnes','magyar','máj','majom','makk','makréla','málna','malom','mályva','mandula','mankó','marad','maraton','marcipán','márga','marha','márka','márvány','más','masina','masni','maszk','matematika','matrica','matróz','medál','medence','meder','medve','méh','mély','menedzser','menny','menü','mér','merénylet','mese','messze','mester','metál','metró','méz','mező','miazma','mikrofon','mikulás','milliárd','milliomos','miniszter','minta','mínusz','mirigy','mise','mitológia','mítosz','mizéria','moha','móka','mókus','molekula','móló','monitor','monokli','monoton','motor','mozi','muzsika','mű','műfaj','műhely','műsor','művész','művelet','nád','nadrág','nagy','naiv','nap','napló','narancs','nárcisz','nász','nátha','négy','négyzet','nép','név','néző','nindzsa','nő','nóta','nővér','nugát','nulla','nyáj','nyak','nyál','nyár','nyárs','nyelv','nyer','nyereg','nyers','nyest','nyíl','nyolc','nyom','nyugalom','nyugat','nyúl','nyúlékony','nyüszít','oázis','obeliszk','objektív','oboa','ócéán','óda','odú','ok','okker','oklevél','okos','október','oktogon','olaj','olasz','oldal','olló','ólom','oltár','olvas','olívabogyó','olyan','omlett','opera','opció','optika','óra','orbáncfű','orchidea','ordináta','orgona','orkán','orom','orosz','orrszarvú','orvos','ostor','ostya','oszlop','oszt','osztály','otthon','öv','özön','őz','pad','padlás','padlizsán','pajkos','pajzs','pákó','pálca','pálma','pálya','páncél','pandúr','panel','pánik','panna','panoráma','pap','papagáj','papír','paprika','papucs','paradicsom','parafa','parancs','parázs','park','párna','pár','párt','part','pasi','passz','paszta','pata','patak','pátens','patika','patkány','páva','pazarlás','peca','pecsét','pedál','pék','pelikán','pemzli','péntek','pénz','pepita','perec','per','peron','persze','pestis','petárda','petrezselem','pezsgő','pia','piac','piccolo','pihen','pikkely','piktogram','pillanat','pille','pillér','pilóta','pince','pingvin','pinty','pipa','piros','pisztoly','pite','pizsama','placc','plafon','plakát','plankton','pláza','pletyka','plüss','pó','pogácsa','pohár','póker','pók','pokol','polc','polip','politika','pollen','póló','póni','pont','ponty','por','porcelán','porc','poros','porta','portré','posta','poszáta','potya','póz','póker','pörkölt','pötty','prizma','próba','probléma','professzor','program','projekt','próféta','proletár','prospektus','protein','prototípus','púder','puding','pulyka','pumpa','pult','púp','puska','puszi','püspök','rab','rács','radar','radír','rag','ragu','ragyog','raj','rajz','rák','rakéta','ral','randi','rang','rántás','rádió','reakció','reál','recept','reccs','reggae','reggeli','rejtély','reklám','remek','remény','rend','rendszer','repce','repeta','répa','repesz','reptér','rés','rész','rét','retesz','retró','reuma','revolver','rezgés','réz','riadó','ribizli','rigó','rikkancs','ring','riport','ritmus','rituálé','rizs','robot','robban','roham','rokkant','rokon','róka','rom','románc','rossz','rosta','rost','rovar','rozmár','rozs','rögbi','röplabda','rövid','rőzse','rúbel','rubin','rúd','ruha','rúna','rúzs','sajt','sakk','sakál','sál','salak','saláta','sámán','sampion','sánc','sár','sárga','sárkány','sarok','sas','sátor','sav','savanyú','seb','sebész','séf','segéd','segély','sejt','selyem','semmi','serleg','serpenyő','sérv','séta','siga','siker','sikk','sima','sí','sín','síp','sír','sir','sirály','síugrás','sivatag','skatulya','smink','smaragd','sodrás','sógor','só','sok','sör','sors','sóska','sóvárgás','sprint','srác','start','statiszta','stég','stílus','stop','stoppol','strandon','strázsa','stressz','strófa','stúdió','sugallat','sugár','sugárút','súly','sündisznó','sushi','suttogás','süket','sül','sült','sűrű','súrlódás','suttyó','svéd','svindli','szabad','szabály','szabó','száj','szakács','szakáll','szakasz','szaki','szál','szállás','szalma','szalon','szaloncukor','szalonna','szamár','szamóca','szám','szán','szándék','szappan','szar','szarvas','szász','szatyor','száz','század','százalék','szecessió','szeg','szegély','szegény','szegfű','szék','szél','szellem','szelvény','szem','személy','szemét','szemle','szempilla','szemüveg','szén','széna','szendvics','szent','szeptember','szer','szerda','szerelem','szerencse','szeretet','szerkezet','szerszám','szerv','szerver','szerviz','szesz','sziget','szignál','szíj','szikla','szilva','szín','szimfónia','szindróma','színész','színpad','színtér','szirén','szirt','szita','szív','szivar','szivattyú','szleng','szlogen','szó','szoba','szobor','szóda','szófa','szokás','szoknya','szolga','szolárium','szoli','szomszéd','szomorú','szósta','szótag','szótár','szöcske','szög','szőke','szőlő','szőnyeg','szörf','szörny','szövet','szövetség','sztrájk','sztráda','szűcs','szűk','szünet','szűrő','szűz','talaj','találka','talány','taliga','talizmán','talp','tál','tálca','tám','tan','tanács','tanár','tánc','tanfolyam','tanú','tanuló','tanya','tányér','tapasz','taps','tár','tárca','tárgy','tarhonya','tarisznya','tarot','társ','táska','tavasz','taxi','tea','teátrum','technika','teher','tehén','tej','tél','telefon','telek','téma','temető','templom','tempó','tenger','tenisz','tény','tér','terasz','terem','terep','terhes','terv','test','testvér','tető','tészta','tét','tétel','tetoválás','tett','tettes','tévé','tigris','tikk','tilalom','tinta','típus','titán','titok','tíz','tó','tojás','tok','tokaji','toll','tolvaj','tomp','tórusz','torta','torzó','több','tök','tölgy','tömeg','tömény','tömlöc','tömlő','törekvés','törlés','törpe','történet','törvény','törzs','tő','tőke','tőr','tőzsde','traffipax','tragédia','traktor','transz','trapéz','trapper','tréfa','tréning','trón','trófea','trükk','túlsúly','túra','turbán','turi','turista','turné','túsz','tüdő','tükör','túl','túlélő','tücsök','tüntetés','tű','tűz','tűzfal','tűzhely','tűzoltó','uborka','udvar','ugrás','új','újdonság','ujj','újság','ukáz','ultra','univerzum','unoka','urán','úr','uszály','uszoda','út','utas','utca','útitárs','utópia','utószó','ü ü ünnep','üdv','ügynök','üres','űr','üveg','üzenet','vad','vád','vadász','vadon','vagon','vagy','vagyon','vágy','vaj','vakar','vakcina','váll','vállalat','vallás','váltó','vámpír','vám','vár','varangy','váratlan','varázs','város','vas','vásár','vászon','váz','vécé','véd','vég','véletlen','vélemény','vendég','vén','vény','verda','veréb','vers','verseny','verzió','vese','vész','veszély','vetélkedő','vezér','vezető','viasz','vibrálás','vicc','videó','vidra','vigasz','világ','villa','villám','villany','virág','virtus','vírus','viszály','viszki','vitamin','vitorla','vissza','visszhang','vitatkozik','víz','vízesés','víziló','vízöntő','viza','vízum','voks','vonal','vontató','vödör','vőlegény','völgy','vörös','wc','web','whisky','xilofon','yacht','zacc','zaj','zálog','zamat','zár','zarándok','zárójel','zászló','zavar','zebu','zeller','zene','zeng','zéró','zivatar','zodiákus','zombi','zongora','zóna','zord','zörej','zuhan','zuhanás','zúzmara','zsák','zsálya','zsarnok','zselé','zsemle','zseni','zseton','zsinagóga','zsinat','zsinór','zsiráf','zsírkréta','zsoké','zsoldos','zsoltár','zsonglőr','zsuga','zsugori','zsűri','zsúr'
-        ];
-        
-        const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
-        const GRID_SIZE = 9, WORD_COUNT = 20, CYCLE_DURATION_MS = 10 * 60 * 1000;
-        let wordsToFind = [], wordPositions = new Map(), grid = [], selectedCells = [];
-        let foundWords = new Set();
-        let isSelectingForDesktop = false;
-        let score = 0;
-        let riskedScore = 0;
-        let isRisking = false;
-        let isWarmupRound = false;
-        let isGameActive = true;
-        let gameTimer, nextBoardDate;
-        
-        let collectedSodaLetters = new Set();
-        let activePowerUp = { type: null, expires: 0, desc: '' };
-        const SODA_LETTERS = ['SZ', 'Ó', 'D', 'A'];
-        
-        let gameState = { sodaPenz: 0, upgrades: { point_multiplier: 0, discount: 0 }, elixirs: { double_points: 0, magnet: 0 } };
-
-        const mainContent = document.getElementById('main-content');
-        const gridContainer = document.getElementById('grid-container');
-        const wordListElement = document.getElementById('words');
-        const scoreElement = document.getElementById('score');
-        const multiplierDisplay = document.getElementById('multiplier-display');
-        const rewardsListElement = document.getElementById('rewards-list');
-        const piacListElement = document.getElementById('piac-list');
-        const newBoardBtn = document.getElementById('new-board-btn');
-        const timerDisplay = document.getElementById('timer-display');
-        const currentWordPreview = document.getElementById('current-word-preview');
-        const megoldasBtn = document.getElementById('megoldas-btn');
-        const clearSelectionBtn = document.getElementById('clear-selection-btn');
-        const sodaHuntLettersContainer = document.getElementById('soda-hunt-letters');
-        const sodaHuntClaimBtn = document.getElementById('soda-hunt-claim-btn');
-        const activePowerupDisplay = document.getElementById('active-powerup-display');
-        const sodaPenzBalance = document.getElementById('soda-penz-balance');
-        const tabNyeremeny = document.getElementById('tab-nyeremeny');
-        const tabPiac = document.getElementById('tab-piac');
-        const endRoundChoices = document.getElementById('end-round-choices');
-        const btnCashIn = document.getElementById('btn-cash-in');
-        const btnRiskIt = document.getElementById('btn-risk-it');
-
         document.addEventListener('DOMContentLoaded', () => {
-            mainContent.style.opacity = '1';
-            loadGameState();
-            startNewRound(0, false);
-        });
-        
-        newBoardBtn.addEventListener('click', () => startNewRound(0, false));
-        btnCashIn.addEventListener('click', () => {
-            gameState.sodaPenz += Math.floor((score + riskedScore) / 10);
-            saveGameState();
-            updateSodaPenzDisplay();
-            startNewRound(0, false);
-        });
-        btnRiskIt.addEventListener('click', () => startNewRound(score + riskedScore, true));
-        
-        megoldasBtn.addEventListener('click', showSolutions);
-        clearSelectionBtn.addEventListener('click', clearSelection);
-        sodaHuntClaimBtn.addEventListener('click', claimSodaReward);
-        tabNyeremeny.addEventListener('click', () => switchTab('nyeremeny'));
-        tabPiac.addEventListener('click', () => switchTab('piac'));
-        
-        function switchTab(tabName) {
-            if(tabName === 'nyeremeny') {
-                tabNyeremeny.classList.add('active');
-                tabPiac.classList.remove('active');
-                rewardsListElement.style.display = 'block';
-                piacListElement.style.display = 'none';
+    // WORD LIST - JAVÍTÁS: Jelentősen bővített lista
+    const hungarianWords = [
+        'ablak', 'asztal', 'autó', 'banán', 'bicikli', 'cica', 'citrom', 'csillag', 'dinnye', 'dió',
+        'elefánt', 'eper', 'erdő', 'fal', 'fa', 'felhő', 'folyó', 'fű', 'gitár', 'gomb', 'gomba', 'gyerek',
+        'gyümölcs', 'hajó', 'hal', 'ház', 'hegy', 'híd', 'hó', 'hold', 'homok', 'iskola', 'játék', 'kacsa',
+        'kalap', 'kapa', 'kapu', 'kert', 'kesztyű', 'kígyó', 'kilincs', 'király', 'kocsi', 'korsó', 'kút',
+        'kutya', 'könyv', 'körte', 'labda', 'láb', 'lámpa', 'létra', 'ló', 'macska', 'madár', 'málna',
+        'medve', 'méz', 'mókus', 'motor', 'nap', 'nadrág', 'narancs', 'nyúl', 'olló', 'óra', 'oroszlán',
+        'pad', 'papír', 'paradicsom', 'párna', 'pénz', 'pillangó', 'pohár', 'polc', 'pulóver', 'rádió',
+        'repülő', 'róka', 'sapka', 'sárkány', 'sátor', 'sonka', 'só', 'szék', 'szekrény', 'szem', 'sziget',
+        'szilva', 'szőlő', 'szőnyeg', 'tál', 'táska', 'telefon', 'tél', 'televízió', 'tenger', 'térkép',
+        'tigris', 'tó', 'tojás', 'tükör', 'tű', 'tűz', 'uborka', 'udvar', 'ujság', 'üveg', 'űrhajó',
+        'vasaló', 'váza', 'verseny', 'villa', 'virág', 'víz', 'vonat', 'vödör', 'zene', 'zongora',
+        'zebra', 'zöldség', 'zászló', 'zokni', 'ágy', 'árvíz', 'ásó', 'csavar', 'csésze', 'csoki',
+        'csónak', 'doboz', 'dzseki', 'ecset', 'edény', 'egér', 'éjjel', 'erdész', 'ezüst', 'festék',
+        'fésű', 'fiók', 'fürdő', 'fül', 'garázs', 'gép', 'golyó', 'haj', 'harang', 'hegedű',
+        'hétfő', 'hinta', 'hús', 'iker', 'ing', 'isten', 'ív', 'joghurt', 'kád', 'kávé',
+        'kefe', 'kenyér', 'kép', 'kerék', 'korona', 'kő', 'kulcs', 'lány', 'levél', 'lufi',
+        'mező', 'mikrofon', 'mozi', 'munkás', 'nyak', 'nyár', 'olaj', 'orvos', 'öv', 'őz', 'papucs',
+        'park', 'posta', 'pók', 'robot', 'ruha', 'sajt', 'sál', 'serpenyő', 'sport', 'száj',
+        'szalvéta', 'szappan', 'szél', 'szemüveg', 'szív', 'szoknya', 'takaró', 'tányér', 'tea',
+        'tej', 'tészta', 'toll', 'torta', 'törölköző', 'ujj', 'utca', 'váll', 'vár', 'vasút', 'vihar',
+        'villám', 'zab', 'zivatar', 'zsiráf', 'zsák', 'pap', 'sas', 'télapó', 'háború', 'béke', 'szabadság',
+        'szeretet', 'öröm', 'bánat', 'élet', 'halál', 'tavasz', 'ősz', 'tűzoltó', 'rendőr', 'kórház',
+        'egyetem', 'főiskola', 'tanár', 'diák', 'számítógép', 'internet', 'program', 'kód', 'játékos'
+    ];
+    const fullWordSet = new Set(hungarianWords.map(w => w.toUpperCase()));
+
+    // DOM Elements
+    const gridContainer = document.getElementById('grid-container');
+    const wordListElement = document.getElementById('words');
+    const scoreElement = document.getElementById('score');
+    const currentWordPreview = document.getElementById('current-word-preview');
+    const clearSelectionBtn = document.getElementById('clear-selection-btn');
+    const undoSelectionBtn = document.getElementById('undo-selection-btn');
+    const megoldasBtn = document.getElementById('megoldas-btn');
+    const timerDisplay = document.getElementById('timer-display');
+    const newBoardBtn = document.getElementById('new-board-btn');
+    const sodaPenzBalanceElement = document.getElementById('soda-penz-balance');
+    const rewardsListElement = document.getElementById('rewards-list');
+    const piacListElement = document.getElementById('piac-list');
+    const tabNyeremeny = document.getElementById('tab-nyeremeny');
+    const tabPiac = document.getElementById('tab-piac');
+    const multiplierDisplay = document.getElementById('multiplier-display');
+    const levelDisplay = document.getElementById('level-display');
+    const endRoundChoices = document.getElementById('end-round-choices');
+    const btnCashIn = document.getElementById('btn-cash-in');
+    const btnRiskIt = document.getElementById('btn-risk-it');
+    const championTrophy = document.getElementById('champion-trophy');
+    const sodaHuntLetters = document.getElementById('soda-hunt-letters').children;
+    const sodaHuntClaimBtn = document.getElementById('soda-hunt-claim-btn');
+    const activePowerupDisplay = document.getElementById('active-powerup-display');
+    const sprintContainer = document.getElementById('sprint-container');
+    const sprintScoreElement = document.getElementById('sprint-score');
+    const wordsTitle = document.getElementById('words-title');
+    const sprintWordsList = document.getElementById('sprint-words-list');
+    
+    // Game Constants
+    const GRID_SIZE = 9;
+    const CYCLE_MINUTES = 6;
+    const LADDER_WORD_COUNTS = [18, 20, 22, 24, 30];
+    const WARMUP_WORD_COUNT = 16;
+
+    // Game State
+    let grid = [];
+    let wordsToFind = [];
+    let wordLocations = new Map();
+    let foundWords = new Set();
+    let selectedCells = [];
+    let isSelecting = false;
+    let currentScore = 0;
+    let nextBoardDate;
+    let isWarmupRound = false;
+    let isGameActive = false; 
+    let WORD_COUNT;
+    let isRisking = false;
+    let riskedScore = 0;
+    let isSprintMode = false;
+    let sprintScore = 0;
+    let sprintFoundWords = new Set();
+    let collectedSodaLetters = new Set();
+    let activePowerUp = { type: null, timer: null };
+    let roundWon = false; // ÚJ VÁLTOZÓ a győzelem állapotának tárolására
+
+    let gameState = {
+        sodaPenz: 0,
+        ladderLevel: 1,
+        upgrades: {
+            point_multiplier: 0,
+            soda_penz_multiplier: 0,
+            bonus_chance: 0,
+            starting_hint: 0,
+        },
+        championUntil: null
+    };
+
+    const REWARDS = {
+        'reveal_letter': { name: 'Betű Felfedés', desc: 'Megmutatja egy véletlenszerű, még meg nem talált szó első betűjét a listán.', cost: 750, type: 'point' },
+        'hint': { name: 'Teljes Segítség', desc: 'Felfed egy komplett, még meg nem talált szót a táblán.', cost: 2000, type: 'point' },
+        'soda_sense': { name: 'Szóda-Érzék (20 mp)', desc: '20 másodpercre halványan fényleni kezdenek a megoldáshoz tartozó betűk.', cost: 6000, type: 'point' },
+        'sprint_start': { name: 'Azonnali Sprint', desc: 'Azonnal elindítja a Sprint módot 30 másodperccel. Körönként egyszer használható.', cost: 8000, type: 'point', used: false },
+    };
+    
+    const PIAC_ITEMS = {
+        'point_multiplier': { name: 'Pontszorzó Fejlesztés', desc: 'Véglegesen növeli a szavak értékét 5%-kal szintenként.', cost: 150, type: 'soda', maxLevel: 10 },
+        'soda_penz_multiplier': { name: 'Szóda-Pénz Szorzó', desc: 'Véglegesen növeli a kör végén kapott Szóda-Pénzt 5%-kal szintenként.', cost: 300, type: 'soda', maxLevel: 10 },
+        'bonus_chance': { name: 'Bónusz Esély Növelés', desc: 'Véglegesen növeli a bónusz mezők (Pont, Idő) megjelenésének esélyét.', cost: 400, type: 'soda', maxLevel: 5 },
+        'starting_hint': { name: 'Kezdő Segítség', desc: 'Minden éles kör egy már felfedett szóval kezdődik. Egyszeri vétel.', cost: 2500, type: 'soda', maxLevel: 1 },
+    };
+
+    // --- Game Logic ---
+
+    function saveGameState() {
+        localStorage.setItem('szodaGameState', JSON.stringify(gameState));
+    }
+
+    function loadGameState() {
+        const savedState = localStorage.getItem('szodaGameState');
+        if (savedState) {
+            const loaded = JSON.parse(savedState);
+            gameState = { ...gameState, ...loaded, upgrades: { ...gameState.upgrades, ...loaded.upgrades } };
+        }
+        updateSodaPenzUI();
+        updatePiacUI();
+        checkChampionStatus();
+    }
+
+    function checkChampionStatus() {
+        if (gameState.championUntil) {
+            const now = new Date().getTime();
+            if (now < gameState.championUntil) {
+                championTrophy.style.display = 'inline';
             } else {
-                tabNyeremeny.classList.remove('active');
-                tabPiac.classList.add('active');
-                rewardsListElement.style.display = 'none';
-                piacListElement.style.display = 'block';
+                gameState.championUntil = null;
+                championTrophy.style.display = 'none';
+                saveGameState();
             }
         }
-
-        function handleCellTap(cell) {
-            if (cell.classList.contains('hint-found') || selectedCells.includes(cell)) return;
-            selectCell(cell);
-            checkSelectedWord(true);
+    }
+    
+    function generateGrid() {
+        let success = false;
+        while (!success) {
+            wordsToFind = [...hungarianWords].sort(() => 0.5 - Math.random()).slice(0, WORD_COUNT).map(w => w.toUpperCase());
+            grid = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill(null).map(() => ({ letter: '', bonus: null, hiddenLetter: null })));
+            wordLocations.clear();
+            success = placeAllWords();
         }
 
-        function selectionStart(cell) {
-            if (!cell || cell.classList.contains('hint-found')) return;
-            isSelectingForDesktop = true;
-            clearSelection();
-            selectCell(cell);
+        if (!isWarmupRound) {
+            placeBonuses('dp', 1 + Math.floor(gameState.ladderLevel / 2));
+            placeBonuses('time', 1 + Math.floor(gameState.ladderLevel / 3));
+            placeSodaLetters();
         }
 
-        function selectionMove(cell) {
-            if (!isSelectingForDesktop || !cell) return;
-            
-            if (selectedCells.length > 1 && cell === selectedCells[selectedCells.length - 2]) {
-                const lastCell = selectedCells.pop();
-                lastCell.classList.remove('selected');
-                updateWordPreview();
-                return;
-            }
-
-            if (cell.classList.contains('selected') || cell.classList.contains('hint-found')) return;
-            
-            const lastCell = selectedCells[selectedCells.length - 1];
-            if (!lastCell) { selectCell(cell); return; }
-            
-            const r1 = parseInt(lastCell.dataset.row), c1 = parseInt(lastCell.dataset.col);
-            const r2 = parseInt(cell.dataset.row), c2 = parseInt(cell.dataset.col);
-            
-            const dr = r2 - r1;
-            const dc = c2 - c1;
-            const steps = Math.max(Math.abs(dr), Math.abs(dc));
-
-            if (steps > 1) { 
-                for (let i = 1; i <= steps; i++) {
-                    const inter_r = r1 + Math.round(i * dr / steps);
-                    const inter_c = c1 + Math.round(i * dc / steps);
-                    const interCellNode = gridContainer.children[inter_r * GRID_SIZE + inter_c];
-                    if (interCellNode && !selectedCells.includes(interCellNode) && !interCellNode.classList.contains('hint-found')) {
-                       selectCell(interCellNode);
-                    }
-                }
-            } else if (Math.abs(dr) <= 1 && Math.abs(dc) <= 1) {
-                 selectCell(cell);
-            }
-        }
-
-        function selectionEnd() {
-            if (!isSelectingForDesktop) return;
-            isSelectingForDesktop = false;
-            if (selectedCells.length > 0) {
-                checkSelectedWord(false);
-            }
-        }
-        
-        function selectCell(cell) {
-            selectedCells.push(cell);
-            cell.classList.add('selected');
-            updateWordPreview();
-        }
-
-        function clearSelection() {
-            selectedCells.forEach(c => c.classList.remove('selected'));
-            selectedCells = [];
-            updateWordPreview();
-        }
-
-        function updateWordPreview() {
-            currentWordPreview.textContent = selectedCells.map(c => c.textContent).join('');
-        }
-
-        function checkSelectedWord(isTap) {
-            const selectedWord = currentWordPreview.textContent;
-            if (wordsToFind.includes(selectedWord) && !foundWords.has(selectedWord)) {
-                foundWords.add(selectedWord);
-                document.getElementById('word-' + selectedWord).classList.add('found');
-                
-                if(!isWarmupRound) {
-                    let multiplier = 1 + (gameState.upgrades.point_multiplier * 0.05);
-                    if(isRisking) multiplier *= 2;
-                    
-                    selectedCells.forEach(cell => {
-                        const r = parseInt(cell.dataset.row);
-                        const c = parseInt(cell.dataset.col);
-                        const cellData = grid[r][c];
-
-                        if(cellData.hiddenLetter) {
-                            collectedSodaLetters.add(cellData.hiddenLetter);
-                            cellData.hiddenLetter = null;
-                            const icon = cell.querySelector('.hidden-bubble-icon');
-                            if(icon) icon.style.opacity = '0';
-                            updateSodaHuntUI();
-                            saveGameState();
-                        }
-
-                        if (isGameActive) {
-                            const bonusType = cellData.bonus;
-                            if(bonusType) {
-                                if(bonusType === 'dp') multiplier *= 2;
-                                else if (bonusType === 'time') nextBoardDate = new Date(nextBoardDate.getTime() + 15000);
-                                cellData.bonus = null;
-                                cell.classList.remove('bonus-dp', 'bonus-time');
-                            }
-                        }
-                    });
-
-                    if (isGameActive) {
-                        if(activePowerUp.type === 'double_points') multiplier *= 2;
-                        updateScore((selectedWord.length * 10) * multiplier);
-                    }
-                }
-                setTimeout(clearSelection, 100);
-            }
-            if (!isTap) {
-                clearSelection();
-            }
-        }
-        
-        function showSolutions() {
-            megoldasBtn.disabled = true;
-            megoldasBtn.style.display = 'none';
-            if(isGameActive) {
-                isGameActive = false;
-                renderRewards(); 
-            }
-            wordsToFind.forEach(word => {
-                if (!foundWords.has(word)) {
-                    const positions = wordPositions.get(word);
-                    if (positions) {
-                        positions.forEach(pos => {
-                            const cell = gridContainer.children[pos.r * GRID_SIZE + pos.c];
-                            cell.style.transition = 'background-color 0.5s, box-shadow 0.5s';
-                            cell.style.backgroundColor = 'var(--neon-purple)';
-                            cell.style.boxShadow = '0 0 15px var(--neon-purple)';
-                        });
-                    }
-                }
-            });
-        }
-        
-        function startNewRound(carryOverScore = 0, isRiskingRound = false) {
-            isGameActive = true;
-            riskedScore = carryOverScore;
-            isRisking = isRiskingRound;
-            
-            const currentSeedStart = Math.floor(Date.now() / CYCLE_DURATION_MS) * CYCLE_DURATION_MS;
-            nextBoardDate = new Date(currentSeedStart + CYCLE_DURATION_MS);
-            const remainingMilliseconds = nextBoardDate - Date.now();
-            
-            isWarmupRound = remainingMilliseconds < (9 * 60 * 1000); // Kevesebb mint 9 perc van hátra?
-            if (isRisking) isWarmupRound = false;
-
-            megoldasBtn.style.display = 'none';
-            timerDisplay.style.display = 'block';
-            newBoardBtn.style.display = 'none';
-            endRoundChoices.style.display = 'none';
-            multiplierDisplay.style.display = isRisking ? 'block' : 'none';
-            
-            const timeSeed = Math.floor(Date.now() / CYCLE_DURATION_MS);
-            setupNewGame(timeSeed);
-            scheduleNextBoard();
-        }
-        
-        function createSeededRandom(seed) { let s = seed; return () => { s = (s * 9301 + 49297) % 233280; return s / 233280; }; }
-        function seededShuffle(array, randomFunc) { let i = array.length; while (i) { let j = Math.floor(randomFunc() * i--);[array[i], array[j]] = [array[j], array[i]]; } return array; }
-        
-        function setupNewGame(seed) {
-            megoldasBtn.disabled = false;
-            wordsToFind = []; wordPositions.clear(); grid = []; selectedCells = []; foundWords.clear(); score = 0;
-            gridContainer.innerHTML = ''; wordListElement.innerHTML = '';
-            
-            const seededRandom = createSeededRandom(seed);
-            
-            grid = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill(null).map(() => ({ char: '', bonus: null, hiddenLetter: null })));
-            
-            let wordSelection = seededShuffle([...hungarianWords], seededRandom);
-            
-            let placedWordsCount = 0;
-            while (placedWordsCount < WORD_COUNT && wordSelection.length > 0) {
-                let word = wordSelection.pop().toUpperCase();
-                if (word.length > GRID_SIZE || word.length < 3) continue;
-                let placement = findPlacementForWord(word, grid, seededRandom);
-                if (placement) { 
-                    wordsToFind.push(word); 
-                    wordPositions.set(word, placement.cells); 
-                    placement.cells.forEach((cell, i) => { grid[cell.r][cell.c].char = word[i]; }); 
-                    placedWordsCount++; 
-                }
-            }
-            
-            fillGridWithRandomLetters(seededRandom);
-            placeBonusFields(seededRandom);
-            placeSodaLetters(seededRandom);
-            renderGrid(); renderWordList(); updateScore(0);
-        }
-        
-        function placeBonusFields(randomFunc) {
-            const emptyCells = getEmptyCells();
-            seededShuffle(emptyCells, randomFunc);
-            
-            let bonusCount = 2;
-            if (activePowerUp.type === 'bonus_rain') bonusCount = 5;
-
-            for(let i=0; i<bonusCount; i++) if(emptyCells.length > 0) { const pos = emptyCells.pop(); if(pos) grid[pos.r][pos.c].bonus = 'dp'; }
-            if(emptyCells.length > 0) { const pos = emptyCells.pop(); if(pos) grid[pos.r][pos.c].bonus = 'time'; }
-            if (activePowerUp.type === 'bonus_rain' && emptyCells.length > 0) { const pos = emptyCells.pop(); if(pos) grid[pos.r][pos.c].bonus = 'time'; }
-            if (activePowerUp.type === 'bonus_rain' && emptyCells.length > 0) { const pos = emptyCells.pop(); if(pos) grid[pos.r][pos.c].bonus = 'time'; }
-        }
-        
-        function placeSodaLetters(randomFunc) {
-            const emptyCells = getEmptyCells();
-            seededShuffle(emptyCells, randomFunc);
-
-            const lettersToPlace = [...SODA_LETTERS, SODA_LETTERS[Math.floor(randomFunc() * SODA_LETTERS.length)]];
-            for(const letter of lettersToPlace) {
-                if(emptyCells.length > 0) {
-                    const pos = emptyCells.pop();
-                    if(pos) grid[pos.r][pos.c].hiddenLetter = letter;
+        const alphabet = "AÁBCDEÉFGHIÍJKLMNOÓÖŐPQRSTUÚÜŰVWXYZ";
+        for (let r = 0; r < GRID_SIZE; r++) {
+            for (let c = 0; c < GRID_SIZE; c++) {
+                if (!grid[r][c].letter) {
+                    grid[r][c].letter = alphabet[Math.floor(Math.random() * alphabet.length)];
                 }
             }
         }
-        
-        function getEmptyCells() {
-            const emptyCells = [];
-            const wordCoords = new Set();
-            wordPositions.forEach(positions => { positions.forEach(pos => wordCoords.add(`${pos.r}-${pos.c}`)); });
+    }
 
-            for(let r=0; r<GRID_SIZE; r++) {
-                for(let c=0; c<GRID_SIZE; c++) {
-                    if(!wordCoords.has(`${r}-${c}`)) {
-                        emptyCells.push({r, c});
-                    }
-                }
-            }
-            return emptyCells;
-        }
+    function placeAllWords() {
+        const directions = [
+            { r: 0, c: 1 }, { r: 1, c: 0 }, { r: 0, c: -1 }, { r: -1, c: 0 }
+        ];
 
-        function findPlacementForWord(word, currentGrid, randomFunc) {
+        for (const word of wordsToFind) {
+            let placed = false;
             let attempts = 0;
-            while (attempts < 100) {
-                let path = [{ r: Math.floor(randomFunc() * GRID_SIZE), c: Math.floor(randomFunc() * GRID_SIZE) }];
-                for (let i = 1; i < word.length; i++) {
-                    let lastPos = path[i - 1]; 
-                    let neighbors = getNeighbors(lastPos.r, lastPos.c, path);
-                    seededShuffle(neighbors, randomFunc);
-                    if (neighbors.length === 0) break;
-                    path.push(neighbors[0]);
-                }
-                if (path.length === word.length) {
-                    let canPlace = true;
-                    for (let i = 0; i < word.length; i++) { if (currentGrid[path[i].r][path[i].c].char !== '' && currentGrid[path[i].r][path[i].c].char !== word[i]) { canPlace = false; break; } }
-                    if (canPlace) return { cells: path };
+            while (!placed && attempts < 200) {
+                const dir = directions[Math.floor(Math.random() * directions.length)];
+                const startRow = Math.floor(Math.random() * GRID_SIZE);
+                const startCol = Math.floor(Math.random() * GRID_SIZE);
+
+                if (canPlaceWord(word, startRow, startCol, dir)) {
+                    placeWord(word, startRow, startCol, dir);
+                    placed = true;
                 }
                 attempts++;
             }
-            return null;
+            if (!placed) return false;
         }
+        return true;
+    }
 
-        function getNeighbors(r, c, exclude) {
-            const neighbors = [];
-            const moves = [ { dr: -1, dc: 0 }, { dr: 1, dc: 0 }, { dr: 0, dc: -1 }, { dr: 0, dc: 1 } ];
-
-            for (const move of moves) {
-                const nr = r + move.dr;
-                const nc = c + move.dc;
-                if (nr >= 0 && nr < GRID_SIZE && nc >= 0 && nc < GRID_SIZE && !exclude.some(p => p.r === nr && p.c === nc)) {
-                    neighbors.push({ r: nr, c: nc });
-                }
+    function canPlaceWord(word, r, c, dir) {
+        for (let i = 0; i < word.length; i++) {
+            const newRow = r + i * dir.r;
+            const newCol = c + i * dir.c;
+            if (newRow < 0 || newRow >= GRID_SIZE || newCol < 0 || newCol >= GRID_SIZE) {
+                return false;
             }
-            return neighbors;
-        }
-        
-        function fillGridWithRandomLetters(randomFunc) { 
-            const alphabet = 'AÁBCDEÉFGHIÍJKLMNOÓÖŐPQRSTUÚÜŰVWXYZ'; 
-            for (let i = 0; i < GRID_SIZE; i++) 
-                for (let j = 0; j < GRID_SIZE; j++) 
-                    if (grid[i][j].char === '') grid[i][j].char = alphabet[Math.floor(randomFunc() * alphabet.length)]; 
-        }
-        
-        function renderGrid() {
-            gridContainer.innerHTML = '';
-            for (let i = 0; i < GRID_SIZE; i++) {
-                for (let j = 0; j < GRID_SIZE; j++) {
-                    const cellData = grid[i][j];
-                    const cell = document.createElement('div');
-                    cell.className = 'grid-cell';
-                    cell.textContent = cellData.char;
-                    cell.dataset.row = i;
-                    cell.dataset.col = j;
-                    
-                    if(cellData.bonus === 'dp') cell.classList.add('bonus-dp');
-                    if(cellData.bonus === 'time') cell.classList.add('bonus-time');
-                    if(cellData.hiddenLetter) {
-                        const icon = document.createElement('div');
-                        icon.className = 'hidden-bubble-icon';
-                        cell.appendChild(icon);
-                    }
-
-                    cell.style.backgroundColor = '';
-                    cell.style.boxShadow = '';
-                    cell.style.transition = '';
-
-                    if (isMobile) {
-                        cell.addEventListener('touchstart', (e) => { e.preventDefault(); selectionStart(cell); }, { passive: false });
-                        cell.addEventListener('touchmove', (e) => { 
-                            e.preventDefault();
-                            const touch = e.touches[0];
-                            const targetCell = document.elementFromPoint(touch.clientX, touch.clientY);
-                            if(targetCell && targetCell.classList.contains('grid-cell')) {
-                                selectionMove(targetCell);
-                            }
-                        }, { passive: false });
-                        cell.addEventListener('touchend', (e) => { e.preventDefault(); selectionEnd(); });
-                    } else {
-                        cell.addEventListener('mousedown', () => selectionStart(cell));
-                        cell.addEventListener('mouseover', () => selectionMove(cell));
-                    }
-                    gridContainer.appendChild(cell);
-                }
-            }
-            if (!isMobile) {
-                document.addEventListener('mouseup', selectionEnd);
+            const existingLetter = grid[newRow][newCol].letter;
+            if (existingLetter && existingLetter !== word[i]) {
+                return false;
             }
         }
+        return true;
+    }
 
-        function renderWordList() { wordListElement.innerHTML = ''; const words = [...wordsToFind].sort((a,b) => a.localeCompare(b)); words.forEach(word => { const li = document.createElement('li'); li.textContent = word; li.id = 'word-' + word; if (foundWords.has(word)) li.classList.add('found'); wordListElement.appendChild(li); }); }
-
-        const rewards = [ { id: 'vowel_hint', name: 'Magánhangzó Tipp', desc: 'Megjelöli egy szó magánhangzóit.', cost: 1000, action: vowelHint }, { id: 'point_bonus', name: 'Pont Bónusz', desc: '+200 pont.', cost: 1500, action: () => updateScore(200) }, { id: 'reveal_letter', name: 'Betű Felfedése', desc: 'Felvillant egy betűt egy szóból.', cost: 2000, action: revealLetter }, { id: 'first_letter', name: 'Első Betű', desc: 'Véglegesen megjelöli egy szó első betűjét.', cost: 4000, action: revealFirstLetter }, { id: 'glimpse_word', name: 'Szópillantás', desc: 'Felvillantja egy szó útvonalát.', cost: 7500, action: glimpseWord }, { id: 'free_pass', name: 'Ingyen Passz', desc: 'Megtalálja a legrövidebb hiányzó szót.', cost: 12000, action: findShortestWord }];
-        const piacItems = [
-            { id: 'point_multiplier', name: 'Szénsav-Infúzió', desc: 'Véglegesen +5% pontot ad minden szóért.', baseCost: 2500, action: (item) => { gameState.upgrades.point_multiplier++; } },
-            { id: 'discount', name: 'Törzsvásárlói Kártya', desc: 'Véglegesen -10% kedvezmény a Nyereményboltban.', baseCost: 4000, action: (item) => { gameState.upgrades.discount++; } },
-            { id: 'elixir_double_points', name: 'Arany-Szóda', desc: 'A következő körben minden pont duplán számít.', cost: 5000, action: (item) => { gameState.elixirs.double_points++; } },
-            { id: 'elixir_magnet', name: 'Mágneses Buborék', desc: 'A következő körben garantáltan megtalálod a hiányzó SZÓDA betűket.', cost: 7500, action: (item) => { gameState.elixirs.magnet++; } }
-        ];
-
-        function updateScore(points) { score = Math.max(0, score + points); scoreElement.textContent = Math.floor(score + riskedScore); renderRewards(); renderPiac(); }
-        
-        function renderRewards() { 
-            rewardsListElement.innerHTML = ''; 
-            rewards.forEach(r => { 
-                let currentCost = Math.floor(r.cost * (1 - (gameState.upgrades.discount * 0.1)));
-                const isAffordable = score >= currentCost;
-                const el = document.createElement('div'); 
-                el.className = 'reward-item ' + (isAffordable && isGameActive && !isWarmupRound ? 'affordable' : 'disabled'); 
-                el.innerHTML = `<div class="reward-name">${r.name}</div><div class="reward-desc">${r.desc}</div><div class="reward-cost">${currentCost} Pont</div>`; 
-                if (isAffordable && isGameActive && !isWarmupRound) el.onclick = () => { if (score >= currentCost) { updateScore(-currentCost); r.action(); } }; 
-                rewardsListElement.appendChild(el); 
-            }); 
+    function placeWord(word, r, c, dir) {
+        const locations = [];
+        for (let i = 0; i < word.length; i++) {
+            const newRow = r + i * dir.r;
+            const newCol = c + i * dir.c;
+            grid[newRow][newCol].letter = word[i];
+            locations.push({ r: newRow, c: newCol });
         }
+        wordLocations.set(word, locations);
+    }
 
-        function renderPiac() {
-            piacListElement.innerHTML = '';
-            piacItems.forEach(item => {
-                let currentCost = item.cost;
-                if(item.baseCost) {
-                    currentCost = Math.floor(item.baseCost * Math.pow(1.5, gameState.upgrades[item.id] || 0));
-                }
-                const isAffordable = gameState.sodaPenz >= currentCost;
-                const el = document.createElement('div');
-                el.className = 'reward-item piac-item ' + (isAffordable ? 'affordable' : 'disabled');
-                el.innerHTML = `<div class="reward-name">${item.name} ${gameState.upgrades[item.id] ? `(Szint ${gameState.upgrades[item.id] + 1})` : ''}</div><div class="reward-desc">${item.desc}</div><div class="piac-cost">${currentCost} SZP</div>`;
-                if(isAffordable) el.onclick = () => buyPiacItem(item, currentCost);
-                piacListElement.appendChild(el);
-            });
+    function placeBonuses(type, count) {
+        const bonusLevel = gameState.upgrades.bonus_chance || 0;
+        const totalCount = count + bonusLevel;
+        let placed = 0;
+        let attempts = 0;
+        while(placed < totalCount && attempts < 100) {
+            const r = Math.floor(Math.random() * GRID_SIZE);
+            const c = Math.floor(Math.random() * GRID_SIZE);
+            if(!grid[r][c].bonus && !grid[r][c].hiddenLetter) {
+                grid[r][c].bonus = type;
+                placed++;
+            }
+            attempts++;
         }
+    }
 
-        function buyPiacItem(item, cost) {
-            if (gameState.sodaPenz >= cost) {
-                gameState.sodaPenz -= cost;
-                item.action(item);
-                saveGameState();
-                updateSodaPenzDisplay();
-                renderPiac();
+    function placeSodaLetters() {
+        const lettersToPlace = ['SZ', 'Ó', 'D', 'A'].filter(l => !collectedSodaLetters.has(l));
+        let placedCount = 0;
+        let attempts = 0;
+        while(placedCount < lettersToPlace.length && attempts < 100) {
+            const r = Math.floor(Math.random() * GRID_SIZE);
+            const c = Math.floor(Math.random() * GRID_SIZE);
+            if(!grid[r][c].bonus && !grid[r][c].hiddenLetter) {
+                grid[r][c].hiddenLetter = lettersToPlace[placedCount];
+                placedCount++;
             }
+            attempts++;
         }
-        
-        function getUnfoundWord(shortest = false) { let unfound = wordsToFind.filter(w => !foundWords.has(w)); if (unfound.length === 0) return null; if (shortest) unfound.sort((a,b) => a.length - b.length); return unfound[0]; }
-        function vowelHint() { const word = getUnfoundWord(); if (!word) return; const vowels = "AÁEÉIÍOÓÖŐUÚÜŰ"; document.getElementById('word-' + word).innerHTML = word.split('').map(l => vowels.includes(l) ? `<span style="color: var(--neon-amber);">${l}</span>` : l).join(''); }
-        function revealLetter() { const word = getUnfoundWord(); if (!word) return; const pos = wordPositions.get(word); const cellInfo = pos[Math.floor(Math.random() * pos.length)]; const cell = gridContainer.children[cellInfo.r * GRID_SIZE + cellInfo.c]; cell.classList.add('solution-path'); setTimeout(() => cell.classList.remove('solution-path'), 1000); }
-        function revealFirstLetter() { const word = getUnfoundWord(); if (!word) return; const cellInfo = wordPositions.get(word)[0]; gridContainer.children[cellInfo.r * GRID_SIZE + cellInfo.c].classList.add('hint-found'); }
-        function glimpseWord() { const word = getUnfoundWord(); if (!word) return; const positions = wordPositions.get(word); positions.forEach(p => { const cell = gridContainer.children[p.r * GRID_SIZE + p.c]; cell.classList.add('solution-path'); setTimeout(() => cell.classList.remove('solution-path'), 1000); }); }
-        function findShortestWord() { const wordToFind = getUnfoundWord(true); if (!wordToFind) return; foundWords.add(wordToFind); document.getElementById('word-' + wordToFind).classList.add('found'); if (isGameActive && !isWarmupRound) updateScore(wordToFind.length * 10); }
+    }
 
-        function endRound() {
-            if (!isGameActive) return;
-            isGameActive = false;
-            clearInterval(gameTimer);
-
-            if(isRisking && foundWords.size < WORD_COUNT) {
-                riskedScore = 0;
-                score = 0;
-                updateScore(0);
-                alert("Sajnos nem találtad meg az összes szót! A kockáztatott pontok elvesztek.");
-                startNewRound(0, false);
-                return;
-            }
-
-            timerDisplay.style.display = 'none';
-            if(score + riskedScore > 0 && !isFreeRound) {
-                endRoundChoices.style.display = 'flex';
-            } else {
-                if (score + riskedScore > 0 && !isWarmupRound) {
-                    gameState.sodaPenz += Math.floor((score + riskedScore) / 10);
-                    saveGameState();
-                    updateSodaPenzDisplay();
-                }
-                newBoardBtn.style.display = 'block';
-                newBoardBtn.textContent = isWarmupRound ? "Kezdődjön az éles játék!" : "Új Tábla";
-            }
-            
-            if(!megoldasBtn.disabled) {
-                megoldasBtn.style.display = 'block';
-            }
-            renderRewards();
-        }
-        
-        function scheduleNextBoard() {
-            if (gameTimer) clearInterval(gameTimer);
-            
-            const checkTime = () => {
-                if (!isGameActive) {
-                    clearInterval(gameTimer);
-                    return;
-                }
-                const now = new Date();
-                const remainingMilliseconds = nextBoardDate - now;
-
-                if (remainingMilliseconds <= 0) {
-                    endRound();
-                    return;
-                }
+    function drawGrid() {
+        gridContainer.innerHTML = '';
+        for (let r = 0; r < GRID_SIZE; r++) {
+            for (let c = 0; c < GRID_SIZE; c++) {
+                const cell = document.createElement('div');
+                cell.classList.add('grid-cell');
+                cell.dataset.row = r;
+                cell.dataset.col = c;
                 
-                const minutes = Math.floor(remainingMilliseconds / 60000);
-                const seconds = Math.floor((remainingMilliseconds % 60000) / 1000);
+                const cellData = grid[r][c];
+                cell.textContent = cellData.letter;
 
-                if(isWarmupRound) {
-                    const targetTime = nextBoardDate.toLocaleTimeString('hu-HU', { hour: '2-digit', minute: '2-digit' });
-                    timerDisplay.textContent = `Bemelegítő Kör (Éles játék: ${targetTime}-kor)`;
-                    timerDisplay.classList.add('warmup-round');
-                } else {
-                    timerDisplay.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-                    timerDisplay.classList.remove('warmup-round');
+                if(cellData.bonus === 'dp') cell.classList.add('bonus-dp');
+                if(cellData.bonus === 'time') cell.classList.add('bonus-time');
+
+                if(cellData.hiddenLetter) {
+                     const icon = document.createElement('div');
+                     icon.className = 'hidden-bubble-icon';
+                     cell.appendChild(icon);
                 }
 
-                if (remainingMilliseconds <= 60000 && !megoldasBtn.disabled) {
-                    megoldasBtn.style.display = 'block';
-                } else if (!megoldasBtn.disabled) {
-                    megoldasBtn.style.display = 'none';
-                }
-            };
-
-            checkTime();
-            gameTimer = setInterval(checkTime, 1000);
-        }
-
-        function updateSodaHuntUI() {
-            let allCollected = SODA_LETTERS.every(letter => collectedSodaLetters.has(letter));
-            
-            sodaHuntLettersContainer.querySelectorAll('span').forEach(span => {
-                const letter = span.dataset.letter;
-                if (collectedSodaLetters.has(letter)) {
-                    span.classList.add('collected');
-                } else {
-                    span.classList.remove('collected');
-                }
-            });
-
-            if (allCollected) {
-                sodaHuntClaimBtn.style.display = 'block';
-                sodaHuntLettersContainer.style.display = 'none';
-            } else {
-                sodaHuntClaimBtn.style.display = 'none';
-                sodaHuntLettersContainer.style.display = 'flex';
+                gridContainer.appendChild(cell);
             }
-            
-            if (activePowerUp && activePowerUp.expires > Date.now()) {
-                activePowerupDisplay.textContent = `Aktív bónusz: ${activePowerUp.desc}`;
+        }
+    }
+
+    function startNewRound(isWarmup) {
+        gridContainer.style.pointerEvents = 'auto';
+        isGameActive = true;
+        isWarmupRound = isWarmup;
+        isSprintMode = false;
+        roundWon = false; // JAVÍTÁS: Győzelem állapotának nullázása
+        REWARDS['sprint_start'].used = false; 
+        
+        clearSelection();
+        foundWords.clear();
+        sprintFoundWords.clear();
+        sprintScore = 0;
+        
+        if (isWarmupRound) {
+            WORD_COUNT = WARMUP_WORD_COUNT;
+            levelDisplay.textContent = "BEMELEGÍTŐ KÖR";
+            updateScore(0, true);
+        } else {
+            WORD_COUNT = LADDER_WORD_COUNTS[gameState.ladderLevel - 1];
+            if (isRisking) {
+                levelDisplay.textContent = `BÓNUSZ KÖR (SZINT ${gameState.ladderLevel})`;
+                multiplierDisplay.style.display = 'block';
             } else {
-                activePowerupDisplay.textContent = '';
+                levelDisplay.textContent = `ÉLES KÖR (SZINT ${gameState.ladderLevel})`;
+                multiplierDisplay.style.display = 'none';
+                updateScore(0, true);
             }
         }
         
-        function claimSodaReward() {
-            const powerups = [
-                { type: 'double_points', desc: 'Pontduplázó' },
-                { type: 'bonus_rain', desc: 'Bónusz Eső' }
-            ];
-            const randomPowerup = powerups[Math.floor(Math.random() * powerups.length)];
+        generateGrid();
+        drawGrid();
+        populateWordList();
+        
+        if (!isWarmupRound && gameState.upgrades.starting_hint > 0 && wordsToFind.length > 0) {
+            processFoundWord(wordsToFind[0], true);
+            applyPermanentHighlight(wordsToFind[0]);
+        }
+        
+        updateRewardsUI();
 
-            activePowerUp = {
-                type: randomPowerup.type,
-                expires: Date.now() + 24 * 60 * 60 * 1000,
-                desc: randomPowerup.desc
-            };
-            
-            collectedSodaLetters.clear();
-            updateSodaHuntUI();
+        newBoardBtn.style.display = 'none';
+        timerDisplay.style.display = 'block';
+        endRoundChoices.style.display = 'none';
+        megoldasBtn.style.display = 'block';
+        megoldasBtn.disabled = false;
+        sprintContainer.style.display = 'none';
+        wordsTitle.style.display = 'block';
+        wordListElement.style.display = 'block';
+        sprintWordsList.innerHTML = '';
+        sprintScoreElement.textContent = '0';
+    }
+    
+    function populateWordList() {
+        wordListElement.innerHTML = '';
+        const isChampionLevel = !isWarmupRound && gameState.ladderLevel === 5;
+
+        wordsToFind.sort((a,b) => a.localeCompare(b)).forEach((word, index) => {
+            const li = document.createElement('li');
+            li.textContent = word;
+            li.id = 'word-' + word;
+            if(isChampionLevel && index > 0) {
+                li.classList.add('hidden-word');
+            }
+            wordListElement.appendChild(li);
+        });
+    }
+
+    function applyPermanentHighlight(word) {
+        const locations = wordLocations.get(word);
+        if (locations) {
+            locations.forEach(loc => {
+                const cellElement = gridContainer.querySelector(`[data-row='${loc.r}'][data-col='${loc.c}']`);
+                if (cellElement) {
+                    cellElement.classList.add('hint-found');
+                }
+            });
+        }
+    }
+    
+    function processFoundWord(word, noPoints = false) {
+        if (!word || foundWords.has(word)) return;
+    
+        foundWords.add(word);
+        const li = document.getElementById('word-' + word);
+        if (li) {
+            li.classList.add('found');
+        }
+    
+        if (!isWarmupRound && !noPoints) {
+            let multiplier = 1 + (gameState.upgrades.point_multiplier * 0.05);
+            if(isRisking) multiplier *= 2;
+            if(activePowerUp.type === 'double_points') multiplier *= 2;
+            updateScore((word.length * 10) * multiplier);
+        }
+        
+        // JAVÍTÁS: Itt már csak a győzelmi állapotot állítjuk be, és elindítjuk a sprintet
+        if (foundWords.size === WORD_COUNT && isGameActive && !isWarmupRound) {
+            roundWon = true;
+            enterSprintMode();
+        }
+    }
+
+    function updateScore(points, absolute = false) {
+        if (absolute) {
+            currentScore = points;
+        } else {
+            currentScore += Math.round(points);
+        }
+        scoreElement.textContent = currentScore;
+        updateRewardsUI();
+    }
+
+    function updateSodaPenzUI() {
+        sodaPenzBalanceElement.textContent = gameState.sodaPenz;
+        updatePiacUI();
+    }
+    
+    function handleSelection(event) {
+        event.preventDefault();
+        const target = event.type.startsWith('touch') ? document.elementFromPoint(event.touches[0].clientX, event.touches[0].clientY) : event.target;
+    
+        if (target && target.classList.contains('grid-cell') && !target.classList.contains('selected')) {
+             if (gridContainer.style.pointerEvents === 'none') return;
+            target.classList.add('selected');
+            selectedCells.push(target);
+            updateCurrentWord();
+        }
+    }
+    
+    async function checkSelectedWord() {
+        const selectedWord = currentWordPreview.textContent;
+
+        let isValidPath = true;
+        if (selectedCells.length > 1) {
+            const r1 = parseInt(selectedCells[0].dataset.row);
+            const c1 = parseInt(selectedCells[0].dataset.col);
+            const r2 = parseInt(selectedCells[1].dataset.row);
+            const c2 = parseInt(selectedCells[1].dataset.col);
+            const dr = r2 - r1;
+            const dc = c2 - c1;
+
+            if (Math.abs(dr) > 1 || Math.abs(dc) > 1 || (dr !== 0 && dc !== 0)) {
+                isValidPath = false;
+            } else {
+                 for (let i = 2; i < selectedCells.length; i++) {
+                    const prev_r = parseInt(selectedCells[i-1].dataset.row);
+                    const prev_c = parseInt(selectedCells[i-1].dataset.col);
+                    const curr_r = parseInt(selectedCells[i].dataset.row);
+                    const curr_c = parseInt(selectedCells[i].dataset.col);
+                    if (curr_r - prev_r !== dr || curr_c - prev_c !== dc) {
+                        isValidPath = false;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (!isValidPath) {
+            clearSelection();
+            return;
+        }
+
+        if(selectedWord.length < 2) {
+            clearSelection();
+            return;
+        }
+        
+        if (isSprintMode) {
+            const isValid = await isValidHungarianWord(selectedWord);
+            if (isValid && !sprintFoundWords.has(selectedWord) && !wordsToFind.includes(selectedWord)) {
+                sprintFoundWords.add(selectedWord);
+                const points = Math.pow(selectedWord.length, 2);
+                sprintScore += points;
+                sprintScoreElement.textContent = sprintScore;
+                
+                const li = document.createElement('li');
+                li.textContent = `${selectedWord} (+${points})`;
+                sprintWordsList.prepend(li);
+            }
+            clearSelection();
+            return;
+        }
+
+        if (wordsToFind.includes(selectedWord) && !foundWords.has(selectedWord)) {
+            const locations = wordLocations.get(selectedWord);
+            const selectedLocations = selectedCells.map(cell => ({r: parseInt(cell.dataset.row), c: parseInt(cell.dataset.col)}));
+
+            let pathMatches = locations && locations.length === selectedLocations.length && 
+                              locations.every((loc, i) => loc.r === selectedLocations[i].r && loc.c === selectedLocations[i].c);
+            let reversePathMatches = locations && locations.length === selectedLocations.length &&
+                                     locations.every((loc, i) => loc.r === selectedLocations[locations.length - 1 - i].r && loc.c === selectedLocations[locations.length - 1 - i].c);
+
+            if (pathMatches || reversePathMatches) {
+                 const currentSelection = [...selectedCells];
+                 const wordToProcess = selectedWord;
+                 
+                 clearSelection();
+                 processFoundWord(wordToProcess);
+                 
+                 currentSelection.forEach(cell => {
+                    cell.classList.add('selected'); // Visszatesszük a narancs kijelölést az animáció idejére
+                    const r = parseInt(cell.dataset.row);
+                    const c = parseInt(cell.dataset.col);
+                    const cellData = grid[r][c];
+                    if (cellData.hiddenLetter && !collectedSodaLetters.has(cellData.hiddenLetter)) {
+                        collectedSodaLetters.add(cellData.hiddenLetter);
+                        updateSodaHuntUI();
+                        const icon = cell.querySelector('.hidden-bubble-icon');
+                        if(icon) icon.style.opacity = '0';
+                    }
+                 });
+                 
+                 setTimeout(() => {
+                    currentSelection.forEach(cell => {
+                        cell.classList.remove('selected');
+                    });
+                    applyPermanentHighlight(wordToProcess);
+                 }, 2000);
+
+            } else {
+                 clearSelection();
+            }
+        } else {
+           clearSelection();
+        }
+    }
+
+    function updateCurrentWord() {
+        currentWordPreview.textContent = selectedCells.map(cell => cell.textContent).join('');
+    }
+
+    function undoLastSelection() {
+        if (selectedCells.length > 0) {
+            const lastCell = selectedCells.pop();
+            lastCell.classList.remove('selected');
+            updateCurrentWord();
+        }
+    }
+    
+    function clearSelection() {
+        selectedCells.forEach(cell => cell.classList.remove('selected'));
+        selectedCells = [];
+        updateCurrentWord();
+    }
+    
+    async function isValidHungarianWord(word) {
+        // JAVÍTÁS: A sprint mód most már 2 betűs szavakat is elfogad
+        if (word.length < 2) return false;
+        const upperCaseWord = word.toUpperCase();
+        if (fullWordSet.has(upperCaseWord)) return true;
+
+        // Az API hívás marad másodlagos ellenőrzésnek
+        try {
+            const response = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/hu/${word.toLowerCase()}`);
+            return response.ok;
+        } catch (error) {
+            console.error("Dictionary API error:", error);
+            return false;
+        }
+    }
+
+    function enterSprintMode() {
+        isSprintMode = true;
+        megoldasBtn.style.display = 'none';
+        
+        wordsTitle.style.display = 'none';
+        wordListElement.style.display = 'none';
+        sprintContainer.style.display = 'flex';
+        
+        levelDisplay.textContent = 'SZÓDA SPRINT!';
+    }
+    
+    // JAVÍTÁS: Teljesen átírt kör végi logika
+    function endRound() {
+        if (!isGameActive) return;
+        isGameActive = false;
+        isSprintMode = false;
+        
+        timerDisplay.style.display = 'none';
+        megoldasBtn.disabled = true;
+
+        if(isWarmupRound) {
+            newBoardBtn.style.display = 'block';
+            newBoardBtn.textContent = 'Várunk a következő éles körre...';
+            return;
+        }
+
+        // Ha a játékos kockáztatott, de nem nyert
+        if (isRisking && !roundWon) {
+            levelDisplay.textContent = "Kockázat Elvesztve!";
+            updateScore(0, true);
+            riskedScore = 0;
+            gameState.ladderLevel = 1; // Vissza az elejére
+            newBoardBtn.style.display = 'block';
+            newBoardBtn.textContent = 'Újrapróbálkozás a következő körben';
+            isRisking = false;
+            multiplierDisplay.style.display = 'none';
             saveGameState();
-            alert(`Gratulálunk! Egy "${activePowerUp.desc}" bónuszt kaptál 24 órára!`);
+            return;
         }
         
-        function updateSodaPenzDisplay() {
-            sodaPenzBalance.textContent = gameState.sodaPenz;
+        // Ha a játékos győzött (akár sprint után, akár pont az idő lejártakor)
+        if (roundWon) {
+             // Bajnoki szint speciális kezelése
+             if (gameState.ladderLevel === 5) {
+                 levelDisplay.textContent = "BAJNOKI CÍM MEGSZEREZVE!";
+                 gameState.championUntil = new Date().getTime() + (7 * 24 * 60 * 60 * 1000);
+                 championTrophy.style.display = 'inline';
+                 cashInPoints(); // Automatikusan beváltja és resetel
+                 gameState.ladderLevel = 1;
+             } else {
+                levelDisplay.textContent = `SZINT ${gameState.ladderLevel} TELJESÍTVE!`;
+                endRoundChoices.style.display = 'flex'; // FELAJÁNLJA A VÁLASZTÁST
+             }
+        } 
+        // Ha az idő egyszerűen lejárt, anélkül, hogy győzött volna
+        else {
+            levelDisplay.textContent = "Idő Lejárt!";
+            cashInPoints(); // Automatikusan beváltja
+            gameState.ladderLevel = 1;
+            newBoardBtn.style.display = 'block';
+            newBoardBtn.textContent = 'Újrapróbálkozás a következő körben';
         }
+        
+        saveGameState();
+    }
+    
+    function cashInPoints() {
+        let sodaPenzGained = Math.floor(currentScore / 100);
+        sodaPenzGained += sprintScore;
+        const sodaMultiplier = 1 + (gameState.upgrades.soda_penz_multiplier * 0.05);
+        sodaPenzGained = Math.round(sodaPenzGained * sodaMultiplier);
 
-        function saveGameState() {
-            const fullGameState = {
-                ...gameState,
-                collectedLetters: Array.from(collectedSodaLetters),
-                activePowerUp: activePowerUp
-            };
-            localStorage.setItem('sodaGameState', JSON.stringify(fullGameState));
+        gameState.sodaPenz += sodaPenzGained;
+        gameState.ladderLevel = 1; // Visszaáll az 1. szintre
+        isRisking = false;
+        
+        updateScore(0, true);
+        riskedScore = 0;
+        updateSodaPenzUI();
+        saveGameState();
+
+        endRoundChoices.style.display = 'none';
+        newBoardBtn.style.display = 'block';
+        newBoardBtn.textContent = 'Várunk a következő éles körre...';
+    }
+
+    function riskIt() {
+        isRisking = true;
+        riskedScore = currentScore; // A tét az eddigi pontszám
+        gameState.ladderLevel++; // Lépés a következő szintre
+        
+        endRoundChoices.style.display = 'none';
+        newBoardBtn.style.display = 'block';
+        newBoardBtn.textContent = 'Várunk a következő éles körre...';
+        // A tényleges új kör indítását a fő időzítő végzi el
+    }
+    
+    function updateTimer() {
+        const now = new Date();
+        const diff = nextBoardDate.getTime() - now.getTime();
+        
+        if (diff <= 0) {
+            if (isGameActive) endRound();
+            
+            const totalMsInCycle = CYCLE_MINUTES * 60 * 1000;
+            const msSinceEpoch = new Date().getTime();
+            const cycleStartEpoch = Math.floor(msSinceEpoch / totalMsInCycle) * totalMsInCycle;
+            nextBoardDate = new Date(cycleStartEpoch + totalMsInCycle);
+
+            startNewRound(false);
         }
+        
+        if (isGameActive) {
+            const minutes = Math.floor(diff / 60000);
+            const seconds = Math.floor((diff % 60000) / 1000);
+            timerDisplay.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            timerDisplay.classList.toggle('warmup-round', isWarmupRound);
+        } else {
+             const minutes = Math.floor(diff / 60000);
+             const seconds = Math.floor((diff % 60000) / 1000);
+             newBoardBtn.textContent = `Következő éles kör: ${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+             newBoardBtn.style.display = 'block';
+             timerDisplay.style.display = 'none';
+        }
+    }
 
-        function loadGameState() {
-            const savedState = localStorage.getItem('sodaGameState');
-            if (savedState) {
-                const loadedState = JSON.parse(savedState);
-                gameState.sodaPenz = loadedState.sodaPenz || 0;
-                gameState.upgrades = loadedState.upgrades || { point_multiplier: 0, discount: 0 };
-                gameState.elixirs = loadedState.elixirs || { double_points: 0, magnet: 0 };
-                
-                collectedSodaLetters = new Set(loadedState.collectedLetters);
-                
-                if (loadedState.activePowerUp && loadedState.activePowerUp.expires > Date.now()) {
-                    activePowerUp = loadedState.activePowerUp;
-                } else {
-                    activePowerUp = { type: null, expires: 0, desc: '' };
-                }
+    function setupInitialTimer() {
+        const totalMsInCycle = CYCLE_MINUTES * 60 * 1000;
+        const msSinceEpoch = new Date().getTime();
+        const cycleStartEpoch = Math.floor(msSinceEpoch / totalMsInCycle) * totalMsInCycle;
+        const cycleEndEpoch = cycleStartEpoch + totalMsInCycle;
+        
+        nextBoardDate = new Date(cycleEndEpoch);
+        
+        const timeIntoCycle = msSinceEpoch - cycleStartEpoch;
+
+        if (timeIntoCycle < 15000 && timeIntoCycle > 0) {
+            startNewRound(false);
+        } else {
+            startNewRound(true);
+        }
+        
+        setInterval(updateTimer, 1000);
+    }
+
+    function updateRewardsUI() {
+        rewardsListElement.innerHTML = '';
+        for (const [id, reward] of Object.entries(REWARDS)) {
+            const item = document.createElement('div');
+            item.className = 'reward-item';
+            item.dataset.id = id;
+            
+            let isAffordable = currentScore >= reward.cost && isGameActive && !isWarmupRound;
+            if (id === 'sprint_start' && reward.used) isAffordable = false;
+
+            if (isAffordable) item.classList.add('affordable');
+            else item.classList.add('disabled');
+
+            item.innerHTML = `
+                <div class="reward-name">${reward.name}</div>
+                <div class="reward-desc">${reward.desc}</div>
+                <div class="reward-cost">${reward.cost.toLocaleString()} pont</div>
+            `;
+            item.addEventListener('click', () => buyReward(id));
+            rewardsListElement.appendChild(item);
+        }
+    }
+
+    function updatePiacUI() {
+        piacListElement.innerHTML = '';
+        for (const [id, itemData] of Object.entries(PIAC_ITEMS)) {
+            const currentLevel = gameState.upgrades[id] || 0;
+            if (currentLevel >= itemData.maxLevel) continue;
+
+            const item = document.createElement('div');
+            item.className = 'reward-item piac-item';
+            item.dataset.id = id;
+            
+            const isAffordable = gameState.sodaPenz >= itemData.cost;
+            if (isAffordable) item.classList.add('affordable');
+            else item.classList.add('disabled');
+            
+            item.innerHTML = `
+                <div class="reward-name">${itemData.name} (${currentLevel}/${itemData.maxLevel})</div>
+                <div class="reward-desc">${itemData.desc}</div>
+                <div class="piac-cost">${itemData.cost.toLocaleString()} SP</div>
+            `;
+            item.addEventListener('click', () => buyPiacItem(id));
+            piacListElement.appendChild(item);
+        }
+    }
+    
+    function buyReward(id) {
+        if (!isGameActive || isWarmupRound) return;
+
+        const reward = REWARDS[id];
+        let canBuy = currentScore >= reward.cost;
+        if(id === 'sprint_start' && reward.used) canBuy = false;
+
+        if (canBuy) {
+            updateScore(-reward.cost);
+            
+            switch(id) {
+                case 'hint':
+                    const unFoundWords = wordsToFind.filter(w => !foundWords.has(w));
+                    if (unFoundWords.length > 0) {
+                        const wordToHint = unFoundWords[Math.floor(Math.random() * unFoundWords.length)];
+                        processFoundWord(wordToHint, true);
+                        applyPermanentHighlight(wordToHint);
+                    }
+                    break;
+                case 'reveal_letter':
+                    const unFound = wordsToFind.filter(w => !foundWords.has(w));
+                     if (unFound.length > 0) {
+                        const wordToReveal = unFound[Math.floor(Math.random() * unFound.length)];
+                        const li = document.getElementById('word-' + wordToReveal);
+                        if (li && !li.querySelector('.revealed-letter')) {
+                             li.innerHTML = `<span class="revealed-letter">${wordToReveal[0]}</span>${' _'.repeat(wordToReveal.length - 1)}`;
+                        }
+                    }
+                    break;
+                case 'soda_sense':
+                    const cellsToGlow = new Set();
+                    wordsToFind.forEach(word => {
+                        if (!foundWords.has(word)) {
+                            const locations = wordLocations.get(word);
+                            if (locations) {
+                                locations.forEach(loc => {
+                                    const cellElement = gridContainer.querySelector(`[data-row='${loc.r}'][data-col='${loc.c}']`);
+                                    if(cellElement) cellsToGlow.add(cellElement);
+                                });
+                            }
+                        }
+                    });
+                    cellsToGlow.forEach(cell => cell.classList.add('soda-sense-glow'));
+                    activatePowerUp('Szóda-Érzék aktív!', 20000);
+                    setTimeout(() => {
+                        cellsToGlow.forEach(cell => cell.classList.remove('soda-sense-glow'));
+                    }, 20000);
+                    break;
+                case 'sprint_start':
+                    if (!REWARDS['sprint_start'].used) {
+                        REWARDS['sprint_start'].used = true;
+                        enterSprintMode();
+                        nextBoardDate = new Date(nextBoardDate.getTime() + 30000);
+                        activatePowerUp('Sprint Bónusz Idő!', 30000);
+                    }
+                    break;
             }
-            updateSodaPenzDisplay();
-            updateSodaHuntUI();
-            renderPiac();
-        }
 
+            updateRewardsUI();
+        }
+    }
+
+    function buyPiacItem(id) {
+        const item = PIAC_ITEMS[id];
+        const currentLevel = gameState.upgrades[id] || 0;
+
+        if (gameState.sodaPenz >= item.cost && currentLevel < item.maxLevel) {
+            gameState.sodaPenz -= item.cost;
+            gameState.upgrades[id] = currentLevel + 1;
+
+            updateSodaPenzUI();
+            updatePiacUI();
+            saveGameState();
+        }
+    }
+
+    function switchShopTab(tab) {
+        if (tab === 'piac') {
+            tabNyeremeny.classList.remove('active');
+            tabPiac.classList.add('active');
+            rewardsListElement.style.display = 'none';
+            piacListElement.style.display = 'block';
+        } else {
+            tabPiac.classList.remove('active');
+            tabNyeremeny.classList.add('active');
+            piacListElement.style.display = 'none';
+            rewardsListElement.style.display = 'block';
+        }
+    }
+    
+    function updateSodaHuntUI() {
+        let allCollected = true;
+        Array.from(sodaHuntLetters).forEach(span => {
+            const letter = span.dataset.letter;
+            if(collectedSodaLetters.has(letter)) {
+                span.classList.add('collected');
+            } else {
+                allCollected = false;
+            }
+        });
+
+        if (allCollected) {
+            sodaHuntClaimBtn.style.display = 'block';
+        }
+    }
+    
+    function claimSodaHuntReward() {
+        gameState.sodaPenz += 500;
+        collectedSodaLetters.clear();
+        Array.from(sodaHuntLetters).forEach(span => span.classList.remove('collected'));
+        sodaHuntClaimBtn.style.display = 'none';
+        updateSodaPenzUI();
+        saveGameState();
+    }
+
+    function activatePowerUp(displayText, durationMs, type = null) {
+        if(activePowerUp.timer) clearTimeout(activePowerUp.timer);
+
+        activePowerupDisplay.textContent = displayText;
+        activePowerUp.type = type;
+
+        activePowerUp.timer = setTimeout(() => {
+            activePowerupDisplay.textContent = '';
+            activePowerUp.type = null;
+        }, durationMs);
+    }
+    
+    function setupEventListeners() {
+        const startSelection = (e) => {
+            if (!isGameActive || gridContainer.style.pointerEvents === 'none') return;
+            e.preventDefault();
+            clearSelection();
+            isSelecting = true;
+            handleSelection(e);
+        };
+
+        const moveSelection = (e) => {
+            if (!isSelecting) return;
+            e.preventDefault();
+            handleSelection(e);
+        };
+
+        const endSelection = (e) => {
+            if (!isSelecting) return;
+            e.preventDefault();
+            isSelecting = false;
+            checkSelectedWord();
+        };
+
+        gridContainer.addEventListener('mousedown', startSelection);
+        gridContainer.addEventListener('mousemove', moveSelection);
+        document.addEventListener('mouseup', endSelection);
+        document.addEventListener('mouseleave', endSelection);
+
+        gridContainer.addEventListener('touchstart', startSelection, { passive: false });
+        gridContainer.addEventListener('touchmove', moveSelection, { passive: false });
+        document.addEventListener('touchend', endSelection);
+        document.addEventListener('touchcancel', endSelection);
+
+
+        clearSelectionBtn.addEventListener('click', clearSelection);
+        undoSelectionBtn.addEventListener('click', undoLastSelection);
+
+        megoldasBtn.addEventListener('click', () => {
+            if (isWarmupRound || !isGameActive) return;
+
+            wordsToFind.forEach(word => {
+                if (!foundWords.has(word)) {
+                    processFoundWord(word, true);
+                    applyPermanentHighlight(word);
+                }
+            });
+            megoldasBtn.disabled = true;
+            gridContainer.style.pointerEvents = 'none';
+        });
+
+        tabNyeremeny.addEventListener('click', () => switchShopTab('nyeremeny'));
+        tabPiac.addEventListener('click', () => switchShopTab('piac'));
+
+        btnCashIn.addEventListener('click', cashInPoints);
+        btnRiskIt.addEventListener('click', riskIt);
+        sodaHuntClaimBtn.addEventListener('click', claimSodaHuntReward);
+    }
+
+    function init() {
+        document.getElementById('main-content').style.opacity = '1';
+        loadGameState();
+        setupEventListeners();
+        setupInitialTimer();
+        updateRewardsUI();
+        updatePiacUI();
+        updateSodaHuntUI();
+    }
+
+    init();
+});
     </script>
 </body>
 </html>
