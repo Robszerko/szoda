@@ -211,6 +211,7 @@
         @keyframes fizz { 0% { transform: translateY(0) scale(1); opacity: 0.7; } 25% { transform: translateY(-5px) scale(1.05); opacity: 0.5; } 50% { transform: translateY(0) scale(0.95); opacity: 0.9; } 75% { transform: translateY(5px) scale(1); opacity: 0.6; } 100% { transform: translateY(0) scale(1); opacity: 0.7; } }
         .grid-cell.bonus-dp { background-color: #4a330c; color: var(--neon-amber); box-shadow: 0 0 15px var(--neon-amber); }
         .grid-cell.bonus-time { background-color: #0c4a2e; color: var(--neon-green); box-shadow: 0 0 15px var(--neon-green); }
+        .grid-cell.bonus-used { opacity: 0.6; cursor: not-allowed; }
         .grid-cell.soda-sense-glow { animation: soda-glow 1.5s infinite alternate; }
         @keyframes soda-glow { from { box-shadow: 0 0 5px rgba(0, 191, 255, 0.2); } to { box-shadow: 0 0 15px rgba(0, 191, 255, 0.7), 0 0 5px rgba(0, 191, 255, 0.7) inset; } }
         .hidden-bubble-icon { position: absolute; bottom: 3px; right: 3px; width: 15px; height: 15px; background: radial-gradient(circle, rgba(0, 191, 255, 0.4) 0%, rgba(0, 191, 255, 0.1) 70%); border-radius: 50%; pointer-events: none; transition: opacity 0.3s; }
@@ -768,6 +769,21 @@
             target.classList.add('selected');
             selectedCells.push(target);
             updateCurrentWord();
+            
+            // Bónusz mezők kezelése
+            const r = parseInt(target.dataset.row);
+            const c = parseInt(target.dataset.col);
+            const cellData = grid[r][c];
+            if (cellData.bonus && !target.classList.contains('bonus-used')) {
+                target.classList.add('bonus-used');
+                if (cellData.bonus === 'dp') {
+                    updateScore(50);
+                    activatePowerUp('+50 Pont!', 2000);
+                } else if (cellData.bonus === 'time') {
+                    nextBoardDate = new Date(nextBoardDate.getTime() + 30000); // +30 másodperc
+                    activatePowerUp('+30 mp Idő!', 2000);
+                }
+            }
         }
     }
     async function checkSelectedWord() {
@@ -1074,7 +1090,7 @@
                     cellsToGlow.forEach(cell => cell.classList.add('soda-sense-glow'));
                     activatePowerUp('Szóda-Érzék aktív!', 20000);
                     setTimeout(() => {
-                        cellsToGlow.forEach(cell => cell.classList.remove('sode-sense-glow'));
+                        cellsToGlow.forEach(cell => cell.classList.remove('soda-sense-glow'));
                     }, 20000);
                     break;
                 case 'sprint_start':
